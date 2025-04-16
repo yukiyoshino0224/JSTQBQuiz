@@ -17,5 +17,10 @@
         <li><a class="menu-link" th:href="@{/chapter/6}">第6章　テストツール</a></li>
         <li><a class="menu-link" th:href="@{/quiz/random}">模擬試験</a></li>
     </ul>
+    <form th:action="@{/logout}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        <button type="submit">ログアウト</button>
+    </form>
+    
 </body>
 </html>

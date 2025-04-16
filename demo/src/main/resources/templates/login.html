@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ログイン</title>
+</head>
+<body>
+    <h1>ログイン</h1>
+    <form th:action="@{/login}" method="POST">
+        <label for="username">ユーザー名:</label>
+        <input type="text" id="username" name="username" required><br><br>
+
+        <label for="password">パスワード:</label>
+        <input type="password" id="password" name="password" required><br><br>
+
+        <button type="submit">ログイン</button>
+    </form>
+    
+    <!-- Spring Security からのエラーメッセージの表示 -->
+    <p style="color: red;">
+        <!-- ログイン失敗時のエラーメッセージを表示 -->
+        <span th:if="${param.error}" th:text="'ログインに失敗しました。ユーザー名またはパスワードが間違っています。'"></span>
+    </p>
+    
+    <p>
+        <!-- ログインページへのリンク（必要に応じて） -->
+        <a href="/register">ユーザー登録はこちら</a>
+    </p>
+</body>
+</html>
