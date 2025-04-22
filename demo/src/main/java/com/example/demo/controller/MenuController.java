@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -106,11 +107,21 @@ public class MenuController {
                 model.addAttribute("hasNext", false);
                 return "quiz";}
 
-                
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
             Question question = questions.get(questionNumber - 1);
+
+            // ✅ 順番通りに進んでいるかチェック
+        List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
+        if (answeredQuestions == null) {
+            answeredQuestions = new ArrayList<>();
+        }
+
+        if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
+            // 順番が守られていない場合、500エラーをスロー
+            throw new RuntimeException("不正なアクセスです。問題を順番通りに解いてください。");
+        }
 
             // 正解の選択肢を取得
             Choice correctChoice = question.getChoices().stream()
@@ -131,6 +142,12 @@ public class MenuController {
             model.addAttribute("displayNumber", questionNumber);
             model.addAttribute("question", question);
             model.addAttribute("hasNext", questionNumber < questions.size());
+
+            // 解答済み問題リストに現在の問題番号を追加
+        if (!answeredQuestions.contains(questionNumber)) {
+            answeredQuestions.add(questionNumber);
+            session.setAttribute("answeredQuestions", answeredQuestions);
+            }
         } else {
             // 範囲外だった場合
             model.addAttribute("chapterNumber", chapterNumber);
