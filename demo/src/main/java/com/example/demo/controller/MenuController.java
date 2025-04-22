@@ -93,7 +93,6 @@ public class MenuController {
     public String showQuestionByNumber(
             @PathVariable int chapterNumber,
             @PathVariable int questionNumber,
-            Model model, HttpSession session) {
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
