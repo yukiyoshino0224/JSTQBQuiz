@@ -1,0 +1,17 @@
+<div th:fragment="header">
+    <header style="background-color: #f0f0f0; padding: 10px;">
+        <nav>
+            <span><a th:href="@{/menu}">メニュー</a></span>
+
+            <span th:if="${session.user != null}">
+                ようこそ、<strong th:text="${session.user.name}">ユーザー名</strong>さん！
+                <form th:action="@{/logout}" method="post" style="display:inline;">
+                    <button type="submit">ログアウト</button>
+                </form>
+            </span>
+            <span th:if="${session.user == null}">
+                <a th:href="@"></a>
+            </span>
+        </nav>
+    </header>
+</div>

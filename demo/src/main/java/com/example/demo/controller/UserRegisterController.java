@@ -36,6 +36,7 @@ public class UserRegisterController {
         if (bindingResult.hasErrors()) {
             return "register";
         }
+        userService.registerUser(registerForm);
         model.addAttribute("message", "登録が完了しました");
         return "redirect:/register-success";
     }
