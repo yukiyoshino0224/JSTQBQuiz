@@ -9,6 +9,8 @@ import com.example.demo.model.QuestionView;
 import com.example.demo.service.QuizService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.couchbase.CouchbaseProperties.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -33,7 +35,10 @@ public class MenuController {
     }
 
     @GetMapping("/menu")
-    public String showMenu() {
+    public String showMenu(HttpSession session) {
+        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        session.setAttribute("username", username);
         answerRepository.deleteAll();
         return "menu";
     }
