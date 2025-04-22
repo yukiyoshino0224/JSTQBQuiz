@@ -114,6 +114,17 @@
       正解率（[[${result.totalCount == 0 ? 0 : (result.correctCount * 100.0 / result.totalCount).intValue()}]]%）
     </div>
 
+    <!-- 合否表示（模擬試験のときだけ） -->
+<div th:if="${isMockExam}">
+  <div th:if="${isPass}" style="text-align:center; font-size:24px; color:#28a745; font-weight:bold; margin-bottom: 20px;">
+    🎉 合格おめでとう！
+  </div>
+  <div th:unless="${isPass}" style="text-align:center; font-size:24px; color:#e74c3c; font-weight:bold; margin-bottom: 20px;">
+    😢 残念…不合格でした
+  </div>
+</div>
+<!---->
+
     <div th:each="question, stat : ${questions}" class="result-item">
       <div class="question-title">
         <span th:if="${question.isCorrect}" class="correct-mark">◯</span>

@@ -75,6 +75,20 @@ public class MenuController {
             }
         }).filter(Objects::nonNull).toList();
 
+        //
+        if (Boolean.TRUE.equals(isMockExam)) {
+            model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
+            model.addAttribute("chapterTitle", "");
+            model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
+        
+            // ★ 合否判定追加（正答率65%以上で合格）
+            double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
+            boolean isPass = percentage >= 65.0;
+            model.addAttribute("isPass", isPass);
+        }
+        //
+        
+
         model.addAttribute("questions", questionsForView);
 
         return "result";
