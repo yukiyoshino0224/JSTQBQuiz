@@ -1,17 +1,30 @@
 <div th:fragment="header">
-    <header style="background-color: #f0f0f0; padding: 10px;">
-        <nav>
-            <span><a th:href="@{/menu}">メニュー</a></span>
+    <header style="background-color: #0f447c; padding: 10px;">
+        <nav style="display: flex; justify-content: space-between; align-items: center; color: white;">
+            <div>
+                <a th:if="${session.username != null}" th:href="@{/menu}" style="color: white; text-decoration: none;">
+                    メニューへ
+                </a>
+            </div>
 
-            <span th:if="${session.username != null}">
-                ようこそ、<strong th:text="${session.username}">ユーザー名</strong>さん！
-                <form th:action="@{/logout}" method="post" style="display:inline;">
-                    <button type="submit">ログアウト</button>
-                </form>
-            </span>
-            <span th:if="${session.username == null}">
-                <a th:href="@{/login}">ログイン</a>
-            </span>
+            <div style="flex: 1; text-align: center;">
+                <span th:if="${session.username == null}">
+                    <span style="font-size: 24px; font-weight: bold; font-family: 'HGS明朝E', 'HG明朝E', serif;">
+                        さあ、君も、JSTQB道場へ入門だ！！！！！
+                    </span>
+                </span>
+            </div>
+
+            <div style="text-align: right;">
+                <span th:if="${session.username != null}">
+                    ようこそ、<strong th:text="${session.username}">ユーザー名</strong>さん！
+                    <form th:action="@{/logout}" method="post" style="display:inline;">
+                        <button type="submit">ログアウト</button>
+                    </form>
+                </span>
+            </div>
+
+            
         </nav>
     </header>
 </div>
