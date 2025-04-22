@@ -3,14 +3,14 @@
         <nav>
             <span><a th:href="@{/menu}">メニュー</a></span>
 
-            <span th:if="${session.user != null}">
-                ようこそ、<strong th:text="${session.user.name}">ユーザー名</strong>さん！
+            <span th:if="${session.username != null}">
+                ようこそ、<strong th:text="${session.username}">ユーザー名</strong>さん！
                 <form th:action="@{/logout}" method="post" style="display:inline;">
                     <button type="submit">ログアウト</button>
                 </form>
             </span>
-            <span th:if="${session.user == null}">
-                <a th:href="@"></a>
+            <span th:if="${session.username == null}">
+                <a th:href="@{/login}">ログイン</a>
             </span>
         </nav>
     </header>

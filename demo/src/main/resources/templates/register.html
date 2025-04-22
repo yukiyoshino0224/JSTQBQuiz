@@ -6,6 +6,7 @@
     <title>ユーザー登録</title>
 </head>
 <body>
+    <div th:replace="fragments/header :: header"></div>
     <h1>ユーザー登録フォーム</h1>
     <form th:action="@{/register}" method="post" th:object="${registerForm}">
 
