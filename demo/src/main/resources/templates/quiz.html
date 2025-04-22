@@ -152,6 +152,9 @@
       </div>
       <br />
       <div class="button-row">
+        <div id="value-error" style="color: red; display: none; margin-right: auto;">
+          不正な選択肢が選択されています
+        </div>
         <button type="submit" id="submit-button" disabled>回答を確定</button>
         <button type="button" id="next-question" disabled>次へ</button>
       </div>
@@ -168,13 +171,26 @@
     const submitButton = document.getElementById('submit-button');
     const nextButton = document.getElementById('next-question');
     const radioButtons = document.querySelectorAll('input[type="radio"]');
+    // 既存の定義のすぐ下あたりに追記
+    const validValues = Array.from(radioButtons).map(r => r.value);
+    const valueError = document.getElementById('value-error');
 
     // ラジオ選択で回答ボタンを有効化
     radioButtons.forEach(radio => {
       radio.addEventListener('change', () => {
+        if (!validValues.includes(radio.value)) {
+        // 不正な value の場合
+        submitButton.disabled = true;
+        submitButton.style.backgroundColor = '#cccccc';
+        submitButton.style.cursor = 'not-allowed';
+        valueError.style.display = 'block';
+        } else {
+        // 正常な value の場合（既存の有効化処理）
         submitButton.disabled = false;
         submitButton.style.backgroundColor = '#e57c3a';
         submitButton.style.cursor = 'pointer';
+        valueError.style.display = 'none';
+        }
       });
     });
 
@@ -182,7 +198,13 @@
       event.preventDefault();
 
       const selected = document.querySelector('input[name="answer"]:checked');
-      if (!selected) return;
+      if (!selected || !validValues.includes(selected.value)) {
+        // 選択なし、または不正な value
+        event.preventDefault();
+        valueError.style.display = 'block';
+        submitButton.disabled = true;
+        return;
+      }
 
       const answerValue = selected.value;
       const chapterNumber = /*[[${chapterNumber}]]*/ null;
