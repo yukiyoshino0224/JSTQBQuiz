@@ -89,7 +89,17 @@
       font-size: 16px;
       font-weight: bold;
       display: none;
-      margin-left: 10px;
+      padding-left: 10px;
+    }
+
+    /* ← judgement 表示位置整えたよ */
+    .judgement {
+      display: flex;
+      align-items: center;
+      margin-top: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      padding-left: 10px;
     }
 
     /* でっかい〇×を表示する演出 */
@@ -149,7 +159,15 @@
           <input type="radio" name="answer" th:value="${choice.id}" id="choice-[[${choice.id}]]" />
           [[${choice.choiceText}]]
         </label>
+      </div><br /> 
+
+
+      <!-- ← ここに移動して表示位置整えた -->
+      <div class="judgement" id="judgement"></div>
+      <div class="correct-answer" id="correct-answer">
+        答え：[[${correctChoiceText}]]
       </div>
+
       <br />
       <div class="button-row">
         <div id="value-error" style="color: red; display: none; margin-right: auto;">
@@ -159,9 +177,6 @@
         <button type="button" id="next-question" disabled>次へ</button>
       </div>
     </form>
-
-    <div class="judgement" id="judgement" style="margin-top: 10px; font-size: 16px; font-weight: bold;"></div>
-    <div class="correct-answer" id="correct-answer">答え：[[${correctChoiceText}]]</div>
 
     <!-- でっかく〇×を表示するエフェクト -->
     <div class="judge-popup" id="judge-popup"></div>

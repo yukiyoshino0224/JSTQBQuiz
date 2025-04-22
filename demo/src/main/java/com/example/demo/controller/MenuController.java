@@ -93,7 +93,20 @@ public class MenuController {
     public String showQuestionByNumber(
             @PathVariable int chapterNumber,
             @PathVariable int questionNumber,
-            Model model, HttpSession session) {
+            Model model , HttpSession session) { 
+                
+            Integer currentChapter = (Integer) session.getAttribute("currentChapter");
+
+            if (currentChapter == null || currentChapter != chapterNumber) {
+                // 不正アクセスと判断してエラー表示
+                model.addAttribute("chapterNumber", chapterNumber);
+                model.addAttribute("chapterTitle", "アクセスできません");
+                model.addAttribute("displayNumber", questionNumber);
+                model.addAttribute("question", null);
+                model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
+                model.addAttribute("hasNext", false);
+                return "quiz";}
+
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
@@ -150,7 +163,8 @@ public class MenuController {
 
     // 最初の問題（デフォルト表示）
     @GetMapping("/chapter/{chapterNumber}")
-    public String showChapter(@PathVariable int chapterNumber, Model model) {
+    public String showChapter(@PathVariable int chapterNumber, Model model, HttpSession session) {
+        session.setAttribute("currentChapter", chapterNumber); 
         return "redirect:/chapter/" + chapterNumber + "/question/1";
     }
 
