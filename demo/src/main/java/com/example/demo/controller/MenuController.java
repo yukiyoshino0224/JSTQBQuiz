@@ -105,7 +105,7 @@ public class MenuController {
                 model.addAttribute("question", null);
                 model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
                 model.addAttribute("hasNext", false);
-                return "quiz";}
+                return "redirect:/error";}
 
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
 
@@ -120,7 +120,7 @@ public class MenuController {
 
         if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
             // 順番が守られていない場合、500エラーをスロー
-            throw new RuntimeException("不正なアクセスです。問題を順番通りに解いてください。");
+            return "redirect:/error"; // 500エラーページにリダイレクト
         }
 
             // 正解の選択肢を取得
@@ -149,13 +149,8 @@ public class MenuController {
             session.setAttribute("answeredQuestions", answeredQuestions);
             }
         } else {
-            // 範囲外だった場合
-            model.addAttribute("chapterNumber", chapterNumber);
-            model.addAttribute("chapterTitle", "該当なし");
-            model.addAttribute("displayNumber", questionNumber);
-            model.addAttribute("question", null);
-            model.addAttribute("correctChoiceText", "問題が存在しません");
-            model.addAttribute("hasNext", false);
+            // 範囲外だった場合、404エラーを返す
+            return "redirect:/404"; // 404ページへリダイレクト
         }
 
         return "quiz";
@@ -255,13 +250,22 @@ public class MenuController {
 
         // もし範囲外の番号ならエラーページ
         if (mockExamQuestions == null || questionNumber < 1 || questionNumber > mockExamQuestions.size()) {
-            System.out.println("ERROR: mockExamQuestions is null in model");
-            model.addAttribute("message", "問題が存在しません");
-            return "error";
+            return "redirect:/404"; // 404ページへリダイレクト
         }
 
         // 現在の問題を取得
         Question question = mockExamQuestions.get(questionNumber - 1);
+
+        // 解答済みの問題番号リストを取得
+        List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
+        if (answeredQuestions == null) {
+            answeredQuestions = new ArrayList<>();
+        }
+
+        // ユーザーが解いていない番号の問題にアクセスした場合、500エラーページへリダイレクト
+        if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
+            return "redirect:/error"; // 500エラーページにリダイレクト
+        }
 
         // 正解の選択肢
         Choice correctChoice = question.getChoices().stream()
