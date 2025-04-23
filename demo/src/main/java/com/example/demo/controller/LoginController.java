@@ -10,8 +10,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import com.example.demo.entity.User;
 import com.example.demo.form.LoginForm;
 import com.example.demo.repository.UserRepository;
+
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 @Controller
@@ -30,14 +33,21 @@ public class LoginController {
     }
 
     @PostMapping("/login")
-    public String LoginUser(@ModelAttribute LoginForm form, Model model) {
+    public String LoginUser(@ModelAttribute LoginForm form, Model model, HttpSession session) {
         User user = userRepository.findByEmail(form.getEmail());
         
         if (user != null && passwordEncoder.matches(form.getPassword(), user.getPassword())) {
+            session.setAttribute("userName", user.getName());
             return "redirect:/menu";
         } else { 
             model.addAttribute("error", "メールアドレスまたはパスワードが間違えています");
             return "login";
         }
+    }
+
+    @PostMapping("/logout")
+    public String logout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/login";
     }
 }
