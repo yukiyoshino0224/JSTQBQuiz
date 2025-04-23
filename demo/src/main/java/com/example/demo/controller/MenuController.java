@@ -16,7 +16,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.http.HttpSession;
@@ -59,16 +61,19 @@ public class MenuController {
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
         } else if (!answers.isEmpty()) {
             Long firstQuestionId = answers.get(0).getQuestionId();
-            Question question = quizService.getQuestionById(firstQuestionId); // service 経由で取得
+      
+            Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
+            Question question = questionMap != null ? questionMap.get(firstQuestionId) : null;
 
             if (question != null) {
                 model.addAttribute("chapterNumber", question.getChapter());
                 model.addAttribute("chapterTitle", question.getChapterTitle());
             }
         }
+        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
 
         List<QuestionView> questionsForView = answers.stream().map(answer -> {
-            Question question = quizService.getQuestionById(answer.getQuestionId());
+            Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
             if (question != null) {
                 QuestionView view = new QuestionView();
                 view.setQuestion(question.getQuestion());
@@ -187,10 +192,18 @@ public class MenuController {
 
         // ランダムに並べた問題を取得してセッションに保存
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
+
+        Map<Long, Question> questionMap = new HashMap<>();
+        for (Question q : questions) {
+            questionMap.put(q.getId(), q);
+        }
+
+        session.setAttribute("questionMap", questionMap);
         session.setAttribute("chapterQuestions", questions); // ←ここがポイント
 
         session.setAttribute("answeredQuestions", new ArrayList<Integer>());
         return "redirect:/chapter/" + chapterNumber + "/question/1";
+
     }
 
     @PostMapping("/submit")
@@ -246,11 +259,17 @@ public class MenuController {
     public String startMockExam(Model model, HttpSession session) {
         List<Question> mockExamQuestions = quizService.getRandomQuestionsForMockExam();
 
+        Map<Long, Question> questionMap = new HashMap<>();
+        for (Question q : mockExamQuestions) {
+            questionMap.put(q.getId(), q);
+        }
+
         // 最初の問題を表示
         if (!mockExamQuestions.isEmpty()) {
             Question question = mockExamQuestions.get(0);
 
             session.setAttribute("mockExamQuestions", mockExamQuestions);
+            session.setAttribute("questionMap", questionMap); 
             session.setAttribute("currentQuestionIndex", 0);
             session.setAttribute("isMockExam", true);
 
