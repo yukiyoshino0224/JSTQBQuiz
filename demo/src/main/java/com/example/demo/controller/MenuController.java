@@ -86,14 +86,13 @@ public class MenuController {
             model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
             model.addAttribute("chapterTitle", "");
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
-        
+
             // ★ 合否判定追加（正答率65%以上で合格）
             double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
             boolean isPass = percentage >= 65.0;
             model.addAttribute("isPass", isPass);
         }
         //
-        
 
         model.addAttribute("questions", questionsForView);
 
@@ -112,35 +111,36 @@ public class MenuController {
     public String showQuestionByNumber(
             @PathVariable int chapterNumber,
             @PathVariable int questionNumber,
-            Model model , HttpSession session) { 
-                
-            Integer currentChapter = (Integer) session.getAttribute("currentChapter");
+            Model model, HttpSession session) {
 
-            if (currentChapter == null || currentChapter != chapterNumber) {
-                // 不正アクセスと判断してエラー表示
-                model.addAttribute("chapterNumber", chapterNumber);
-                model.addAttribute("chapterTitle", "アクセスできません");
-                model.addAttribute("displayNumber", questionNumber);
-                model.addAttribute("question", null);
-                model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
-                model.addAttribute("hasNext", false);
-                return "quiz";}
+        Integer currentChapter = (Integer) session.getAttribute("currentChapter");
 
-        List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
+        if (currentChapter == null || currentChapter != chapterNumber) {
+            // 不正アクセスと判断してエラー表示
+            model.addAttribute("chapterNumber", chapterNumber);
+            model.addAttribute("chapterTitle", "アクセスできません");
+            model.addAttribute("displayNumber", questionNumber);
+            model.addAttribute("question", null);
+            model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
+            model.addAttribute("hasNext", false);
+            return "quiz";
+        }
+
+        List<Question> questions = (List<Question>) session.getAttribute("chapterQuestions");
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
             Question question = questions.get(questionNumber - 1);
 
             // ✅ 順番通りに進んでいるかチェック
-        List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
-        if (answeredQuestions == null) {
-            answeredQuestions = new ArrayList<>();
-        }
+            List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
+            if (answeredQuestions == null) {
+                answeredQuestions = new ArrayList<>();
+            }
 
-        if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
-            // 順番が守られていない場合、500エラーをスロー
-            throw new RuntimeException("不正なアクセスです。問題を順番通りに解いてください。");
-        }
+            if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
+                // 順番が守られていない場合、500エラーをスロー
+                throw new RuntimeException("不正なアクセスです。問題を順番通りに解いてください。");
+            }
 
             // 正解の選択肢を取得
             Choice correctChoice = question.getChoices().stream()
@@ -163,9 +163,9 @@ public class MenuController {
             model.addAttribute("hasNext", questionNumber < questions.size());
 
             // 解答済み問題リストに現在の問題番号を追加
-        if (!answeredQuestions.contains(questionNumber)) {
-            answeredQuestions.add(questionNumber);
-            session.setAttribute("answeredQuestions", answeredQuestions);
+            if (!answeredQuestions.contains(questionNumber)) {
+                answeredQuestions.add(questionNumber);
+                session.setAttribute("answeredQuestions", answeredQuestions);
             }
         } else {
             // 範囲外だった場合
@@ -183,7 +183,13 @@ public class MenuController {
     // 最初の問題（デフォルト表示）
     @GetMapping("/chapter/{chapterNumber}")
     public String showChapter(@PathVariable int chapterNumber, Model model, HttpSession session) {
-        session.setAttribute("currentChapter", chapterNumber); 
+        session.setAttribute("currentChapter", chapterNumber);
+
+        // ランダムに並べた問題を取得してセッションに保存
+        List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
+        session.setAttribute("chapterQuestions", questions); // ←ここがポイント
+
+        session.setAttribute("answeredQuestions", new ArrayList<Integer>());
         return "redirect:/chapter/" + chapterNumber + "/question/1";
     }
 
@@ -223,15 +229,15 @@ public class MenuController {
             System.out.println("保存時エラー: " + e.getMessage());
         }
 
-        //return "OK";
+        // return "OK";
         //
         // 結果を返すためのデータを返す
-    if (isCorrect) {
-        return "correct"; // 正解
-    } else {
-        return "incorrect"; // 不正解
-    }
-    //
+        if (isCorrect) {
+            return "correct"; // 正解
+        } else {
+            return "incorrect"; // 不正解
+        }
+        //
     }
 
     // 模擬試験の初期画面（ランダムな40問）
