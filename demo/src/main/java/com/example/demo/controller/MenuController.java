@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 
@@ -35,7 +36,12 @@ public class MenuController {
     }
 
     @GetMapping("/menu")
-    public String showMenu(HttpSession session) {
+    public String showMenu(HttpServletResponse response, HttpSession session) {
+
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         session.setAttribute("username", username);
@@ -124,7 +130,8 @@ public class MenuController {
                 model.addAttribute("question", null);
                 model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
                 model.addAttribute("hasNext", false);
-                return "redirect:/error";}
+                return "redirect:/error";
+            }
 
         List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
 
