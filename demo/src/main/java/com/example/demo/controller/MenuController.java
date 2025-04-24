@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 
@@ -36,7 +37,12 @@ public class MenuController {
     }
 
     @GetMapping("/menu")
-    public String showMenu(HttpSession session) {
+    public String showMenu(HttpServletResponse response, HttpSession session) {
+
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         session.setAttribute("username", username);
@@ -128,7 +134,8 @@ public class MenuController {
                 model.addAttribute("question", null);
                 model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
                 model.addAttribute("hasNext", false);
-                return "redirect:/error";}
+                return "redirect:/error";
+            }
 
         List<Question> questions = (List<Question>) session.getAttribute("chapterQuestions");
 
@@ -279,6 +286,11 @@ public class MenuController {
             model.addAttribute("question", question);
             model.addAttribute("hasNext", mockExamQuestions.size() > 1); // 次の問題があるかの判定
             model.addAttribute("displayNumber", 1);
+
+            List<Integer> answeredQuestions = new ArrayList<>();
+            answeredQuestions.add(1); // ← 1問目は表示してるので入れとく
+            session.setAttribute("answeredQuestions", answeredQuestions);
+
         }
 
         return "quiz";
@@ -309,6 +321,11 @@ public class MenuController {
         // ユーザーが解いていない番号の問題にアクセスした場合、500エラーページへリダイレクト
         if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
             return "redirect:/error"; // 500エラーページにリダイレクト
+        }
+
+        if (!answeredQuestions.contains(questionNumber)) {
+            answeredQuestions.add(questionNumber);
+            session.setAttribute("answeredQuestions", answeredQuestions);
         }
 
         // 正解の選択肢
