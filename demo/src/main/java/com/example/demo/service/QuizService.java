@@ -65,7 +65,17 @@ public class QuizService {
 
     // getQuestionsByChapterメソッド
     public List<Question> getQuestionsByChapter(int chapterNumber) {
-        return questionRepository.findByChapter(chapterNumber);
+        List<Question> questions = questionRepository.findByChapter(chapterNumber);
+    
+        // 選択肢をランダムに並び替え
+        for (Question question : questions) {
+            List<Choice> choices = question.getChoices();
+            Collections.shuffle(choices); // ← 選択肢をシャッフル
+        }
+    
+        // 問題もランダムに並び替え
+        Collections.shuffle(questions); // ← 問題自体もシャッフル
+        return questions;
     }
 
     // 模擬試験用：1〜6章の問題からランダムに40問を取得

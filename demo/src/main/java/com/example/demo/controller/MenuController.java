@@ -16,7 +16,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.http.HttpSession;
@@ -59,16 +61,19 @@ public class MenuController {
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
         } else if (!answers.isEmpty()) {
             Long firstQuestionId = answers.get(0).getQuestionId();
-            Question question = quizService.getQuestionById(firstQuestionId); // service 経由で取得
+      
+            Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
+            Question question = questionMap != null ? questionMap.get(firstQuestionId) : null;
 
             if (question != null) {
                 model.addAttribute("chapterNumber", question.getChapter());
                 model.addAttribute("chapterTitle", question.getChapterTitle());
             }
         }
+        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
 
         List<QuestionView> questionsForView = answers.stream().map(answer -> {
-            Question question = quizService.getQuestionById(answer.getQuestionId());
+            Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
             if (question != null) {
                 QuestionView view = new QuestionView();
                 view.setQuestion(question.getQuestion());
@@ -86,14 +91,13 @@ public class MenuController {
             model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
             model.addAttribute("chapterTitle", "");
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
-        
+
             // ★ 合否判定追加（正答率65%以上で合格）
             double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
             boolean isPass = percentage >= 65.0;
             model.addAttribute("isPass", isPass);
         }
         //
-        
 
         model.addAttribute("questions", questionsForView);
 
@@ -112,6 +116,7 @@ public class MenuController {
     public String showQuestionByNumber(
             @PathVariable int chapterNumber,
             @PathVariable int questionNumber,
+
             Model model , HttpSession session) { 
                 
             Integer currentChapter = (Integer) session.getAttribute("currentChapter");
@@ -126,16 +131,17 @@ public class MenuController {
                 model.addAttribute("hasNext", false);
                 return "redirect:/error";}
 
-        List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
+        List<Question> questions = (List<Question>) session.getAttribute("chapterQuestions");
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
             Question question = questions.get(questionNumber - 1);
 
             // ✅ 順番通りに進んでいるかチェック
-        List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
-        if (answeredQuestions == null) {
-            answeredQuestions = new ArrayList<>();
-        }
+            List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
+            if (answeredQuestions == null) {
+                answeredQuestions = new ArrayList<>();
+            }
+
 
         if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
             // 順番が守られていない場合、500エラーをスロー
@@ -163,9 +169,9 @@ public class MenuController {
             model.addAttribute("hasNext", questionNumber < questions.size());
 
             // 解答済み問題リストに現在の問題番号を追加
-        if (!answeredQuestions.contains(questionNumber)) {
-            answeredQuestions.add(questionNumber);
-            session.setAttribute("answeredQuestions", answeredQuestions);
+            if (!answeredQuestions.contains(questionNumber)) {
+                answeredQuestions.add(questionNumber);
+                session.setAttribute("answeredQuestions", answeredQuestions);
             }
         } else {
             // 範囲外だった場合、404エラーを返す
@@ -178,8 +184,22 @@ public class MenuController {
     // 最初の問題（デフォルト表示）
     @GetMapping("/chapter/{chapterNumber}")
     public String showChapter(@PathVariable int chapterNumber, Model model, HttpSession session) {
-        session.setAttribute("currentChapter", chapterNumber); 
+        session.setAttribute("currentChapter", chapterNumber);
+
+        // ランダムに並べた問題を取得してセッションに保存
+        List<Question> questions = quizService.getQuestionsByChapter(chapterNumber);
+
+        Map<Long, Question> questionMap = new HashMap<>();
+        for (Question q : questions) {
+            questionMap.put(q.getId(), q);
+        }
+
+        session.setAttribute("questionMap", questionMap);
+        session.setAttribute("chapterQuestions", questions); // ←ここがポイント
+
+        session.setAttribute("answeredQuestions", new ArrayList<Integer>());
         return "redirect:/chapter/" + chapterNumber + "/question/1";
+
     }
 
     @PostMapping("/submit")
@@ -218,15 +238,15 @@ public class MenuController {
             System.out.println("保存時エラー: " + e.getMessage());
         }
 
-        //return "OK";
+        // return "OK";
         //
         // 結果を返すためのデータを返す
-    if (isCorrect) {
-        return "correct"; // 正解
-    } else {
-        return "incorrect"; // 不正解
-    }
-    //
+        if (isCorrect) {
+            return "correct"; // 正解
+        } else {
+            return "incorrect"; // 不正解
+        }
+        //
     }
 
     // 模擬試験の初期画面（ランダムな40問）
@@ -235,11 +255,17 @@ public class MenuController {
     public String startMockExam(Model model, HttpSession session) {
         List<Question> mockExamQuestions = quizService.getRandomQuestionsForMockExam();
 
+        Map<Long, Question> questionMap = new HashMap<>();
+        for (Question q : mockExamQuestions) {
+            questionMap.put(q.getId(), q);
+        }
+
         // 最初の問題を表示
         if (!mockExamQuestions.isEmpty()) {
             Question question = mockExamQuestions.get(0);
 
             session.setAttribute("mockExamQuestions", mockExamQuestions);
+            session.setAttribute("questionMap", questionMap); 
             session.setAttribute("currentQuestionIndex", 0);
             session.setAttribute("isMockExam", true);
 
