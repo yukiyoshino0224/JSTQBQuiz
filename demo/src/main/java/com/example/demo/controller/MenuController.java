@@ -261,6 +261,11 @@ public class MenuController {
             model.addAttribute("question", question);
             model.addAttribute("hasNext", mockExamQuestions.size() > 1); // 次の問題があるかの判定
             model.addAttribute("displayNumber", 1);
+
+            List<Integer> answeredQuestions = new ArrayList<>();
+            answeredQuestions.add(1); // ← 1問目は表示してるので入れとく
+            session.setAttribute("answeredQuestions", answeredQuestions);
+
         }
 
         return "quiz";
@@ -291,6 +296,11 @@ public class MenuController {
         // ユーザーが解いていない番号の問題にアクセスした場合、500エラーページへリダイレクト
         if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
             return "redirect:/error"; // 500エラーページにリダイレクト
+        }
+
+        if (!answeredQuestions.contains(questionNumber)) {
+            answeredQuestions.add(questionNumber);
+            session.setAttribute("answeredQuestions", answeredQuestions);
         }
 
         // 正解の選択肢
