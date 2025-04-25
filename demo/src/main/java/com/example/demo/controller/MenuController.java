@@ -113,6 +113,7 @@ public class MenuController {
     public String resetAnswers(HttpSession session) {
         answerRepository.deleteAll(); // 回答履歴を全部削除！
         session.removeAttribute("isMockExam"); // ★リセット時に削除
+        session.removeAttribute("mode"); // ★ 追加！mode もリセット！
         return "redirect:/menu"; // メニューに戻る
     }
 
