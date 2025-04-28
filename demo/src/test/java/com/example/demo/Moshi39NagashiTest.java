@@ -10,6 +10,7 @@ import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -17,12 +18,15 @@ public class Moshi39NagashiTest {
     @Test
     public void SequenceOfMoshi() {
 
+        ChromeOptions options = new ChromeOptions();
+        options.addArguments("--incognito");
+
         // System.setProperty("webdriver.chrome.driver",
         // "C:\\selenium\\chromedriver-win64\\chromedriver.exe");
         // ↑これはpathを設定していない場合に用います
         // 環境構築していないとSelenium使えないので、実施する際は先にそちらをお願いします。
 
-        WebDriver driver = new ChromeDriver();
+        WebDriver driver = new ChromeDriver(options);
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
 
         // 模試を流す目的の為、Assertionは全画面省略します。
