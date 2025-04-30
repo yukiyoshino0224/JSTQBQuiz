@@ -20,6 +20,11 @@ public class LoginUserDetails implements UserDetails {
         return user;
     }
 
+    public Integer getUserId() {
+        return user.getId().intValue(); // 明示的にIntegerに変換！
+    }
+    
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.emptyList();
