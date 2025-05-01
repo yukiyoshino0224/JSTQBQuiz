@@ -64,6 +64,13 @@ public class MenuController {
             model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
             model.addAttribute("chapterTitle", "");
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
+
+            List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
+            List<Integer> chapters = new ArrayList<>(); // 章番号を格納するリストに変更
+            for (Question question : mockExamQuestions) {
+                chapters.add(question.getChapter()); // 各問題の章番号をリストに追加
+            }
+            model.addAttribute("chapters", chapters); // 各問題の章情報をモデルに追加
         } else if (!answers.isEmpty()) {
             Long firstQuestionId = answers.get(0).getQuestionId();
       
