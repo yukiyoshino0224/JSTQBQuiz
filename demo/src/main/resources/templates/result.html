@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
       background-color: #f8f8f8;
       padding: 20px;
     }
+
     .container {
       background-color: white;
       border: 3px solid #2f628f;
@@ -18,11 +20,13 @@
       max-width: 800px;
       margin: 0 auto;
     }
+
     h1 {
       font-size: 24px;
       color: #2f2f2f;
       text-align: center;
     }
+
     .score {
       text-align: center;
       font-size: 32px;
@@ -30,11 +34,13 @@
       font-weight: bold;
       margin: 10px 0;
     }
+
     .result-item {
       margin-top: 30px;
       border-top: 1px solid #ccc;
       padding-top: 20px;
     }
+
     .question-title {
       font-weight: bold;
       font-size: 18px;
@@ -42,27 +48,33 @@
       display: flex;
       align-items: center;
     }
+
     .correct-mark {
       color: #66bb66;
       font-size: 30px;
       margin-right: 10px;
     }
+
     .incorrect-mark {
       color: #e74c3c;
       font-size: 30px;
       margin-right: 10px;
     }
+
     .options label {
       display: block;
       margin: 5px 0;
     }
+
     .correct-answer {
       color: #66bb66;
     }
+
     .button-area {
       text-align: center;
       margin-top: 40px;
     }
+
     .button-area button {
       background-color: #e57c3a;
       border: none;
@@ -72,34 +84,43 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
     .options {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 10px;
-  }
-  .choice-box {
-    padding: 10px 15px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    background-color: #f0f0f0;
-  }
-  .choice-box.correct-answer {
-    background-color: #d2f5d2;
-    border-color: #66bb66;
-    font-weight: bold;
-  }
-  .choice-box.incorrect-answer {
-  background-color: #f8d7da; /* 赤色の背景 */
-  border-color: #e74c3c; /* 赤色のボーダー */
-  font-weight: bold; /* 太字にして強調 */
-  }
-  .choice-box.user-selected {
-    background-color: #ffe0b3;
-    border-color: #e57c3a;
-  }
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .choice-box {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+    }
+
+    .choice-box.correct-answer {
+      background-color: #d2f5d2;
+      border-color: #66bb66;
+      font-weight: bold;
+    }
+
+    .choice-box.incorrect-answer {
+      background-color: #f8d7da;
+      /* 赤色の背景 */
+      border-color: #e74c3c;
+      /* 赤色のボーダー */
+      font-weight: bold;
+      /* 太字にして強調 */
+    }
+
+    .choice-box.user-selected {
+      background-color: #ffe0b3;
+      border-color: #e57c3a;
+    }
   </style>
 </head>
+
 <body>
   <div th:replace="fragments/header :: header"></div>
   <div class="container">
@@ -116,15 +137,17 @@
     </div>
 
     <!-- 合否表示（模擬試験のときだけ） -->
-<div th:if="${isMockExam}">
-  <div th:if="${isPass}" style="text-align:center; font-size:24px; color:#28a745; font-weight:bold; margin-bottom: 20px;">
-    🎉 合格おめでとう！
-  </div>
-  <div th:unless="${isPass}" style="text-align:center; font-size:24px; color:#e74c3c; font-weight:bold; margin-bottom: 20px;">
-    😢 残念…不合格でした
-  </div>
-</div>
-<!---->
+    <div th:if="${isMockExam}">
+      <div th:if="${isPass}"
+        style="text-align:center; font-size:24px; color:#28a745; font-weight:bold; margin-bottom: 20px;">
+        🎉 合格おめでとう！
+      </div>
+      <div th:unless="${isPass}"
+        style="text-align:center; font-size:24px; color:#e74c3c; font-weight:bold; margin-bottom: 20px;">
+        😢 残念…不合格でした
+      </div>
+    </div>
+    <!---->
 
     <div th:each="question, stat : ${questions}" class="result-item">
       <div class="question-title">
@@ -132,23 +155,33 @@
         <span th:unless="${question.isCorrect}" class="incorrect-mark">×</span>
         問題[[${stat.index + 1}]]：[[${question.question}]]
       </div>
+
+
+
       <div class="options" th:each="choice : ${question.choices}">
         <div class="choice-box"
-              th:classappend="${choice.isCorrect ? 'correct-answer' : ''} 
+          th:classappend="${choice.isCorrect ? 'correct-answer' : ''} 
                                 + ${(question.selectedChoiceId == choice.id && !choice.isCorrect) ? ' incorrect-answer' : ''}">
-            [[${choice.choiceText}]]
+          [[${choice.choiceText}]]
         </div>
-          <div style="margin-top: 5px; font-size: 14px; color: #555;">
-            解説：[[${choice.explanation}]]
+        <div style="margin-top: 5px; font-size: 14px; color: #555;">
+          解説：[[${choice.explanation}]]
         </div>
       </div>
+      <br>
+      <div th:if="${isMockExam}" style="color: #5f5f5f; font-size: 14px; margin-left: 10px; float: right;">
+          （第[[${chapters[stat.index]}]]章）
       </div>
     </div>
 
-    <div class="button-area">
-      <a href="/reset">
-        <button type="button">メニューへ</button>
-      </a>
-    </div>    
+  </div>
+  </div>
+
+  <div class="button-area">
+    <a href="/reset">
+      <button type="button">メニューへ</button>
+    </a>
+  </div>
 </body>
+
 </html>

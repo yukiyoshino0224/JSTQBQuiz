@@ -3,6 +3,10 @@
 <head>
     <title>一問一答アプリ - メニュー</title>
     <link rel="stylesheet" type="text/css" href="styles.css"> <!-- CSSのリンク -->
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
 </head>
 <body>
     <div th:replace="fragments/header :: header"></div>
@@ -19,5 +23,15 @@
         <li><a class="menu-link" th:href="@{/quiz/random}">模擬試験</a></li>
         <li><a class="menu-link" th:href="@{/record}">履歴</a></li>
     </ul>
+
+    <script>
+        window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // 🔁 戻ってキャッシュから表示されたら強制リセットへ
+            location.href = "/reset";
+        }
+        });
+    </script>
+    
 </body>
 </html>

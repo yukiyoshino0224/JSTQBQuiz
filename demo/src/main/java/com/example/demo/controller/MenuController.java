@@ -27,6 +27,7 @@ import com.example.demo.repository.AnswerRepository;
 import com.example.demo.service.QuizRecordService;
 import com.example.demo.service.QuizService;
 
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
@@ -56,7 +57,12 @@ public class MenuController {
     }
 
     @GetMapping("/menu")
-    public String showMenu(HttpSession session) {
+    public String showMenu(HttpServletResponse response, HttpSession session) {
+
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
+        response.setDateHeader("Expires", 0);
+
         org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         session.setAttribute("username", username);
@@ -85,10 +91,20 @@ public class MenuController {
         if (Boolean.TRUE.equals(isMockExam)) {
             model.addAttribute("chapterNumber", "模擬試験");
             model.addAttribute("chapterTitle", "");
-            model.addAttribute("isMockExam", true);
+
 
             double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
             model.addAttribute("isPass", percentage >= 65.0);
+
+            model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
+
+            List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
+            List<Integer> chapters = new ArrayList<>(); // 章番号を格納するリストに変更
+            for (Question question : mockExamQuestions) {
+                chapters.add(question.getChapter()); // 各問題の章番号をリストに追加
+            }
+            model.addAttribute("chapters", chapters); // 各問題の章情報をモデルに追加
+
         } else if (!answers.isEmpty()) {
             Long firstQuestionId = answers.get(0).getQuestionId();
             Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
@@ -154,6 +170,7 @@ public class MenuController {
     public String resetAnswers(HttpSession session) {
         answerRepository.deleteAll(); // 回答履歴を全部削除！
         session.removeAttribute("isMockExam"); // ★リセット時に削除
+        session.removeAttribute("mode"); // ★ 追加！mode もリセット！
         return "redirect:/menu"; // メニューに戻る
     }
 
@@ -326,6 +343,11 @@ public class MenuController {
             model.addAttribute("question", question);
             model.addAttribute("hasNext", mockExamQuestions.size() > 1); // 次の問題があるかの判定
             model.addAttribute("displayNumber", 1);
+
+            List<Integer> answeredQuestions = new ArrayList<>();
+            answeredQuestions.add(1); // ← 1問目は表示してるので入れとく
+            session.setAttribute("answeredQuestions", answeredQuestions);
+
         }
 
         return "quiz";
@@ -356,6 +378,11 @@ public class MenuController {
         // ユーザーが解いていない番号の問題にアクセスした場合、500エラーページへリダイレクト
         if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
             return "redirect:/error"; // 500エラーページにリダイレクト
+        }
+
+        if (!answeredQuestions.contains(questionNumber)) {
+            answeredQuestions.add(questionNumber);
+            session.setAttribute("answeredQuestions", answeredQuestions);
         }
 
         // 正解の選択肢
