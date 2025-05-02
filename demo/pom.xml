@@ -102,13 +102,12 @@
     <version>4.0.1</version>
     <scope>provided</scope>
 </dependency>
+    <dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>4.20.0</version> <!-- 2025年4月時点での最新安定版を想定 -->
             <scope>test</scope>
-        </dependency>
-
-
+    </dependency>
     </dependencies>
 
     <build>
