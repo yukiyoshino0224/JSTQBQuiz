@@ -1,39 +1,59 @@
 package com.example.demo.controller;
 
-import com.example.demo.model.Result;
-import com.example.demo.repository.AnswerRepository;
-import com.example.demo.model.Answer;
-import com.example.demo.model.Choice;
-import com.example.demo.model.Question;
-import com.example.demo.model.QuestionView;
-import com.example.demo.service.QuizService;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.example.demo.model.Answer;
+import com.example.demo.model.Choice;
+import com.example.demo.model.Question;
+import com.example.demo.model.QuestionView;
+import com.example.demo.model.QuizRecord;
+import com.example.demo.model.Result;
+import com.example.demo.repository.AnswerRepository;
+import com.example.demo.service.QuizRecordService;
+import com.example.demo.service.QuizService;
+
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.Authentication;
 
 @Controller
 public class MenuController {
 
     private final AnswerRepository answerRepository;
     private final QuizService quizService;
+    private QuizRecordService quizRecordService;
+
+    // MenuController内にこのメソッドを追加する
+    public void saveUserIdToSession(HttpSession session) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            session.setAttribute("userId", userDetails.getUsername()); // userIdをセッションにセット
+        }
+    }
 
     @Autowired
-    public MenuController(QuizService quizService, AnswerRepository answerRepository) {
+    public MenuController(QuizService quizService, AnswerRepository answerRepository,
+            QuizRecordService quizRecordService) {
         this.quizService = quizService;
         this.answerRepository = answerRepository;
+        this.quizRecordService = quizRecordService;
     }
 
     @GetMapping("/menu")
@@ -52,17 +72,30 @@ public class MenuController {
 
     @GetMapping("/evaluate")
     public String evaluateAnswers(Model model, HttpSession session) {
-        List<Answer> answers = answerRepository.findAll(); // ←全件とって評価！
-        int correctCount = (int) answers.stream().filter(Answer::isCorrect).count(); // 正解の数カウント
+        System.out.println("=== /evaluate 処理開始 ===");
 
-        Result result = new Result(correctCount, answers.size()); // ←Result に詰める（作ってる？）
-        model.addAttribute("result", result);
+        List<Answer> answers = answerRepository.findAll(); // 回答一覧取得
+        System.out.println("回答数: " + answers.size());
+
+        int correctCount = (int) answers.stream().filter(Answer::isCorrect).count(); // 正解数カウント
+        System.out.println("正解数: " + correctCount);
+
+        model.addAttribute("result", new Result(correctCount, answers.size())); // 結果をResultで渡す
 
         Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
+        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
 
+        System.out.println("模擬試験かどうか: " + isMockExam);
+
+        // 模擬試験 or 通常問題の表示設定
         if (Boolean.TRUE.equals(isMockExam)) {
-            model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
+            model.addAttribute("chapterNumber", "模擬試験");
             model.addAttribute("chapterTitle", "");
+
+
+            double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
+            model.addAttribute("isPass", percentage >= 65.0);
+
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
 
             List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
@@ -71,49 +104,66 @@ public class MenuController {
                 chapters.add(question.getChapter()); // 各問題の章番号をリストに追加
             }
             model.addAttribute("chapters", chapters); // 各問題の章情報をモデルに追加
+
         } else if (!answers.isEmpty()) {
             Long firstQuestionId = answers.get(0).getQuestionId();
-      
-            Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
-            Question question = questionMap != null ? questionMap.get(firstQuestionId) : null;
+            Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
 
-            if (question != null) {
-                model.addAttribute("chapterNumber", question.getChapter());
-                model.addAttribute("chapterTitle", question.getChapterTitle());
+            if (firstQuestion != null) {
+                model.addAttribute("chapterNumber", firstQuestion.getChapter());
+                model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
             }
         }
-        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
 
-        List<QuestionView> questionsForView = answers.stream().map(answer -> {
-            Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
-            if (question != null) {
-                QuestionView view = new QuestionView();
-                view.setQuestion(question.getQuestion());
-                view.setCorrect(answer.isCorrect());
-                view.setChoices(question.getChoices()); // 正解情報を含む選択肢のリストを設定
-                view.setSelectedChoiceId(answer.getSelectedChoiceId()); // ユーザーが選択したIDを設定
-                return view;
-            } else {
-                return null;
-            }
-        }).filter(Objects::nonNull).toList();
+        // 表示用に加工した問題リストを作成
+        List<QuestionView> questionsForView = answers.stream()
+                .map(answer -> {
+                    Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
+                    if (question == null)
+                        return null;
 
-        //
-        if (Boolean.TRUE.equals(isMockExam)) {
-            model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
-            model.addAttribute("chapterTitle", "");
-            model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
-
-            // ★ 合否判定追加（正答率65%以上で合格）
-            double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
-            boolean isPass = percentage >= 65.0;
-            model.addAttribute("isPass", isPass);
-        }
-        //
+                    QuestionView view = new QuestionView();
+                    view.setQuestion(question.getQuestion());
+                    view.setCorrect(answer.isCorrect());
+                    view.setChoices(question.getChoices());
+                    view.setSelectedChoiceId(answer.getSelectedChoiceId());
+                    return view;
+                })
+                .filter(Objects::nonNull)
+                .toList();
 
         model.addAttribute("questions", questionsForView);
 
-        return "result";
+        // 通常問題のみ記録を保存
+        Long userId = (Long) session.getAttribute("userId");
+        System.out.println("ユーザーID: " + userId);
+
+        if (userId != null && !Boolean.TRUE.equals(isMockExam)) {
+            System.out.println("保存処理に入るよ〜！");
+
+            Long firstQuestionId = answers.get(0).getQuestionId();
+            Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
+
+            if (firstQuestion != null) {
+                System.out.println(
+                        "記録保存情報: chapter=" + firstQuestion.getChapter() + ", title=" + firstQuestion.getChapterTitle());
+
+                quizRecordService.saveQuizRecord(
+                        correctCount,
+                        answers.size(),
+                        firstQuestion.getChapter(),
+                        firstQuestion.getChapterTitle(),
+                        userId);
+
+                System.out.println("保存処理呼び出し完了！");
+            } else {
+                System.out.println("firstQuestionがnullだったよ😥");
+            }
+        } else {
+            System.out.println("保存スキップされたよ〜（userIdなし or 模擬試験）");
+        }
+
+        return "result"; // 結果ページに遷移
     }
 
     @GetMapping("/reset")
@@ -130,20 +180,20 @@ public class MenuController {
             @PathVariable int chapterNumber,
             @PathVariable int questionNumber,
 
-            Model model , HttpSession session) { 
-                
-            Integer currentChapter = (Integer) session.getAttribute("currentChapter");
+            Model model, HttpSession session) {
 
-            if (currentChapter == null || currentChapter != chapterNumber) {
-                // 不正アクセスと判断してエラー表示
-                model.addAttribute("chapterNumber", chapterNumber);
-                model.addAttribute("chapterTitle", "アクセスできません");
-                model.addAttribute("displayNumber", questionNumber);
-                model.addAttribute("question", null);
-                model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
-                model.addAttribute("hasNext", false);
-                return "redirect:/error";
-            }
+        Integer currentChapter = (Integer) session.getAttribute("currentChapter");
+
+        if (currentChapter == null || currentChapter != chapterNumber) {
+            // 不正アクセスと判断してエラー表示
+            model.addAttribute("chapterNumber", chapterNumber);
+            model.addAttribute("chapterTitle", "アクセスできません");
+            model.addAttribute("displayNumber", questionNumber);
+            model.addAttribute("question", null);
+            model.addAttribute("correctChoiceText", "不正なアクセスが検出されました");
+            model.addAttribute("hasNext", false);
+            return "redirect:/error";
+        }
 
         List<Question> questions = (List<Question>) session.getAttribute("chapterQuestions");
 
@@ -156,11 +206,10 @@ public class MenuController {
                 answeredQuestions = new ArrayList<>();
             }
 
-
-        if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
-            // 順番が守られていない場合、500エラーをスロー
-            return "redirect:/error"; // 500エラーページにリダイレクト
-        }
+            if (questionNumber > 1 && !answeredQuestions.contains(questionNumber - 1)) {
+                // 順番が守られていない場合、500エラーをスロー
+                return "redirect:/error"; // 500エラーページにリダイレクト
+            }
 
             // 正解の選択肢を取得
             Choice correctChoice = question.getChoices().stream()
@@ -279,7 +328,7 @@ public class MenuController {
             Question question = mockExamQuestions.get(0);
 
             session.setAttribute("mockExamQuestions", mockExamQuestions);
-            session.setAttribute("questionMap", questionMap); 
+            session.setAttribute("questionMap", questionMap);
             session.setAttribute("currentQuestionIndex", 0);
             session.setAttribute("isMockExam", true);
 
@@ -349,4 +398,16 @@ public class MenuController {
 
         return "quiz";
     }
+
+    @GetMapping("/record")
+    public String showRecordPage(Model model) {
+        // 履歴データをDBから取得
+        List<QuizRecord> records = quizRecordService.getAllRecords(); // 履歴取得
+
+        // Modelにデータを渡す
+        model.addAttribute("records", records);
+
+        return "record"; // record.html に遷移
+    }
+
 }

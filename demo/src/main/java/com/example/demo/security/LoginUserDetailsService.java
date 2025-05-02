@@ -1,12 +1,13 @@
 package com.example.demo.security;
 
-import com.example.demo.entity.User;
-import com.example.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import com.example.demo.entity.User;
+import com.example.demo.repository.UserRepository;
 
 // Spring Securityがログイン時に呼び出すサービス
 @Service
@@ -25,8 +26,11 @@ public class LoginUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("該当するユーザーが見つかりません");
         }
 
-        // ユーザーが見つかった場合 → Spring Securityがこの情報で認証する
-        return new LoginUserDetails(user);
+        // Spring Security用のUserを返す！
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getEmail())
+                .password(user.getPassword())
+                .roles("USER")
+                .build();
     }
 }
-

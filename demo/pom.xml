@@ -91,11 +91,23 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <version>1.18.30</version> <!-- versionは合ってればOK -->
+        <scope>provided</scope>
+        </dependency>
+        <dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>4.0.1</version>
+    <scope>provided</scope>
+</dependency>
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>4.20.0</version> <!-- 2025年4月時点での最新安定版を想定 -->
             <scope>test</scope>
         </dependency>
+
 
     </dependencies>
 
