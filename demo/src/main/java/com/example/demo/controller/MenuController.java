@@ -24,6 +24,8 @@ import com.example.demo.model.QuestionView;
 import com.example.demo.model.QuizRecord;
 import com.example.demo.model.Result;
 import com.example.demo.repository.AnswerRepository;
+import com.example.demo.repository.QuizRecordRepository;
+import com.example.demo.repository.UserRepository;
 import com.example.demo.service.QuizRecordService;
 import com.example.demo.service.QuizService;
 
@@ -31,12 +33,19 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
+import com.example.demo.entity.User; // ✅ ここで必要！
+
 
 @Controller
 public class MenuController {
 
     private final AnswerRepository answerRepository;
     private final QuizService quizService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired private QuizRecordRepository quizRecordRepository;
+
+
     private QuizRecordService quizRecordService;
 
     // MenuController内にこのメソッドを追加する
@@ -57,18 +66,36 @@ public class MenuController {
     }
 
     @GetMapping("/menu")
-    public String showMenu(HttpServletResponse response, HttpSession session) {
 
-        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-        response.setHeader("Pragma", "no-cache");
-        response.setDateHeader("Expires", 0);
+    public String showMenu(HttpSession session) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        User user = userRepository.findByEmail(userDetails.getUsername()); // ← メールで検索！
+        if (user != null) {
+            session.setAttribute("userId", user.getId()); // ← これが履歴保存のカギ！
+            session.setAttribute("username", user.getName()); // ← または getEmail() にしてもOK！
 
-        org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String username = auth.getName();
-        session.setAttribute("username", username);
+            System.out.println("セッションにuserIdを保存したよ！ID: " + user.getId());
+        }
+    }
+    
         answerRepository.deleteAll();
         return "menu";
     }
+
+    // public String showMenu(HttpServletResponse response, HttpSession session) {
+
+    //     response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    //     response.setHeader("Pragma", "no-cache");
+    //     response.setDateHeader("Expires", 0);
+
+    //     org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    //     String username = auth.getName();
+    //     session.setAttribute("username", username);
+    //     answerRepository.deleteAll();
+    //     return "menu";
+    // }
 
     @GetMapping("/evaluate")
     public String evaluateAnswers(Model model, HttpSession session) {
@@ -400,14 +427,17 @@ public class MenuController {
     }
 
     @GetMapping("/record")
-    public String showRecordPage(Model model) {
-        // 履歴データをDBから取得
-        List<QuizRecord> records = quizRecordService.getAllRecords(); // 履歴取得
-
-        // Modelにデータを渡す
+    public String showRecordPage(HttpSession session, Model model) {
+        Long userId = (Long) session.getAttribute("userId");
+    
+        if (userId == null) {
+            return "redirect:/login"; // ← ログインしてなかったら戻す
+        }
+    
+        List<QuizRecord> records = quizRecordRepository.findByUserId(userId);
         model.addAttribute("records", records);
-
-        return "record"; // record.html に遷移
+        return "record";
     }
+    
 
 }
