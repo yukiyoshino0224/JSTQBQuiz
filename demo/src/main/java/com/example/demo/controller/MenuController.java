@@ -48,12 +48,24 @@ public class MenuController {
         List<Answer> answers = answerRepository.findAll(); // ←全件とって評価！
         int correctCount = (int) answers.stream().filter(Answer::isCorrect).count(); // 正解の数カウント
 
-        Result result = new Result(correctCount, answers.size()); // ←Result に詰める（作ってる？）
-        model.addAttribute("result", result);
+        //Result result = new Result(correctCount, answers.size()); // ←Result に詰める（作ってる？）
+        //model.addAttribute("result", result);
 
         Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
 
+            // ✨ ここがポイント！模試なら分母40、そうでなければ答えた数
+    int totalCount = Boolean.TRUE.equals(isMockExam) ? 40 : answers.size();
+
+        // 🧠 結果オブジェクトに渡すのも totalCount を使う！
+        Result result = new Result(correctCount, totalCount);
+        model.addAttribute("result", result);
+
+        // 🎯 模試の場合の合否判定
         if (Boolean.TRUE.equals(isMockExam)) {
+            double percentage = (totalCount == 0) ? 0.0 : ((double) correctCount / totalCount) * 100;
+            boolean isPass = percentage >= 65.0;
+            model.addAttribute("isPass", isPass);
+
             model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
             model.addAttribute("chapterTitle", "");
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
@@ -65,6 +77,7 @@ public class MenuController {
                 model.addAttribute("chapterNumber", question.getChapter());
                 model.addAttribute("chapterTitle", question.getChapterTitle());
             }
+            model.addAttribute("isMockExam", false);
         }
 
         List<QuestionView> questionsForView = answers.stream().map(answer -> {
@@ -86,11 +99,12 @@ public class MenuController {
             model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
             model.addAttribute("chapterTitle", "");
             model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
+
+            model.addAttribute("questions", questionsForView);
+
+            return "result";
         
-            // ★ 合否判定追加（正答率65%以上で合格）
-            double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
-            boolean isPass = percentage >= 65.0;
-            model.addAttribute("isPass", isPass);
+            
         }
         //
         
