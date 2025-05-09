@@ -16,16 +16,18 @@ public class QuizRecordService {
     private QuizRecordRepository quizRecordRepository;
 
     // ユーザーの quizRecord を保存するメソッド
-    public void saveQuizRecord(int correctCount, int totalCount, int chapter, String chapterTitle, Long userId) {
+    public void saveQuizRecord(int correctCount, int totalCount, int chapter, String chapterTitle, Long userId, boolean isMockExam) {
         QuizRecord record = new QuizRecord();
         record.setCorrectCount(correctCount);
         record.setTotalCount(totalCount);
         record.setChapter(chapter);
         record.setChapterTitle(chapterTitle);
-        record.setUserId(userId);  // userId をそのまま渡して使う
+        record.setUserId(userId);
+        record.setMockExam(isMockExam); // ← 追加プロパティ
         record.setCreatedAt(LocalDateTime.now());
         quizRecordRepository.save(record);
     }
+    
 
     // 履歴を全件取得するメソッド
     public List<QuizRecord> getAllRecords() {

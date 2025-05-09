@@ -35,4 +35,8 @@ public class QuizRecord {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    @Column(name = "is_mock_exam")
+    private boolean isMockExam;
+
 }
