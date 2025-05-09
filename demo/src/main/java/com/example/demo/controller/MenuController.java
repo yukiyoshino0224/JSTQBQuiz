@@ -104,19 +104,29 @@ public class MenuController {
         List<Answer> answers = answerRepository.findAll(); // 回答一覧取得
         System.out.println("回答数: " + answers.size());
 
-        int correctCount = (int) answers.stream().filter(Answer::isCorrect).count(); // 正解数カウント
-        System.out.println("正解数: " + correctCount);
 
-        model.addAttribute("result", new Result(correctCount, answers.size())); // 結果をResultで渡す
 
         Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
         Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
 
         System.out.println("模擬試験かどうか: " + isMockExam);
 
-        // 模擬試験 or 通常問題の表示設定
+
+            // ✨ ここがポイント！模試なら分母40、そうでなければ答えた数
+    int totalCount = Boolean.TRUE.equals(isMockExam) ? 40 : answers.size();
+
+        // 🧠 結果オブジェクトに渡すのも totalCount を使う！
+        Result result = new Result(correctCount, totalCount);
+        model.addAttribute("result", result);
+
+        // 🎯 模試の場合の合否判定
         if (Boolean.TRUE.equals(isMockExam)) {
-            model.addAttribute("chapterNumber", "模擬試験");
+            double percentage = (totalCount == 0) ? 0.0 : ((double) correctCount / totalCount) * 100;
+            boolean isPass = percentage >= 65.0;
+            model.addAttribute("isPass", isPass);
+
+            model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
+
             model.addAttribute("chapterTitle", "");
 
 
@@ -140,6 +150,7 @@ public class MenuController {
                 model.addAttribute("chapterNumber", firstQuestion.getChapter());
                 model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
             }
+            model.addAttribute("isMockExam", false);
         }
 
         // 表示用に加工した問題リストを作成
@@ -186,8 +197,21 @@ public class MenuController {
             } else {
                 System.out.println("firstQuestionがnullだったよ😥");
             }
-        } else {
-            System.out.println("保存スキップされたよ〜（userIdなし or 模擬試験）");
+
+        }).filter(Objects::nonNull).toList();
+
+        //
+        if (Boolean.TRUE.equals(isMockExam)) {
+            model.addAttribute("chapterNumber", "模擬試験"); // ★模擬試験用
+            model.addAttribute("chapterTitle", "");
+            model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
+
+            model.addAttribute("questions", questionsForView);
+
+            return "result";
+        
+            
+
         }
 
         return "result"; // 結果ページに遷移
