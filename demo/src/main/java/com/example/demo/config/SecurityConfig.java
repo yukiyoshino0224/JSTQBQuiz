@@ -1,6 +1,4 @@
 package com.example.demo.config;
-
-import com.example.demo.security.LoginUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,11 +11,9 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 public class SecurityConfig {
 
-    private final LoginUserDetailsService userDetailsService;
+    
 
-    public SecurityConfig(LoginUserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
+    
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -50,7 +46,7 @@ public class SecurityConfig {
                 .logoutSuccessUrl("/login?logout") // ログアウト成功時
                 .permitAll()
             )
-            .csrf().disable(); // 開発時のみ無効
+            .csrf(csrf -> csrf.disable()); // 開発時のみ無効
 
         return http.build();
     }
