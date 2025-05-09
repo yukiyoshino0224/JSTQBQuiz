@@ -59,7 +59,11 @@
 
         <!-- レコードを表示 -->
         <div th:each="record : ${records}" class="record-item">
-            <p>第 <span th:text="${record.chapter}">1</span> 章: <span th:text="${record.chapterTitle}">Chapter Title</span></p>
+            <p th:if="${record.mockExam}">模擬試験の記録</p>
+
+            <p th:if="${!record.mockExam}">
+             第 <span th:text="${record.chapter}"></span> 章: <span th:text="${record.chapterTitle}"></span>
+                    </p>
             <p>実施日: <span th:text="${#temporals.format(record.createdAt, 'yyyy年MM月dd日 HH:mm')}">2025年05月08日 16:37</span></p>
             <p>総問題数: <span th:text="${record.totalCount}">10</span> 問</p>
             <p>正解数: <span th:text="${record.correctCount}">8</span> 問</p>

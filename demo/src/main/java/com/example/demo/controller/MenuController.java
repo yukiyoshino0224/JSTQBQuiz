@@ -98,100 +98,89 @@ public class MenuController {
     // }
 
     @GetMapping("/evaluate")
-    public String evaluateAnswers(Model model, HttpSession session) {
-        System.out.println("=== /evaluate 処理開始 ===");
+public String evaluateAnswers(Model model, HttpSession session) {
+    System.out.println("=== /evaluate 処理開始 ===");
 
-        List<Answer> answers = answerRepository.findAll(); // 回答一覧取得
-        System.out.println("回答数: " + answers.size());
+    List<Answer> answers = answerRepository.findAll();
+    int correctCount = (int) answers.stream().filter(Answer::isCorrect).count();
 
-        int correctCount = (int) answers.stream().filter(Answer::isCorrect).count(); // 正解数カウント
-        System.out.println("正解数: " + correctCount);
+    model.addAttribute("result", new Result(correctCount, answers.size()));
 
-        model.addAttribute("result", new Result(correctCount, answers.size())); // 結果をResultで渡す
+    Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
+    Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
+    Long userId = (Long) session.getAttribute("userId");
 
-        Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
-        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
+    if (Boolean.TRUE.equals(isMockExam)) {
+        model.addAttribute("chapterNumber", "模擬試験");
+        model.addAttribute("chapterTitle", "");
 
-        System.out.println("模擬試験かどうか: " + isMockExam);
+        double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
+        model.addAttribute("isPass", percentage >= 65.0);
+        model.addAttribute("isMockExam", true);
 
-        // 模擬試験 or 通常問題の表示設定
-        if (Boolean.TRUE.equals(isMockExam)) {
-            model.addAttribute("chapterNumber", "模擬試験");
-            model.addAttribute("chapterTitle", "");
-
-
-            double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
-            model.addAttribute("isPass", percentage >= 65.0);
-
-            model.addAttribute("isMockExam", Boolean.TRUE.equals(isMockExam));
-
-            List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
-            List<Integer> chapters = new ArrayList<>(); // 章番号を格納するリストに変更
-            for (Question question : mockExamQuestions) {
-                chapters.add(question.getChapter()); // 各問題の章番号をリストに追加
-            }
-            model.addAttribute("chapters", chapters); // 各問題の章情報をモデルに追加
-
-        } else if (!answers.isEmpty()) {
-            Long firstQuestionId = answers.get(0).getQuestionId();
-            Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
-
-            if (firstQuestion != null) {
-                model.addAttribute("chapterNumber", firstQuestion.getChapter());
-                model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
-            }
+        List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
+        List<Integer> chapters = new ArrayList<>();
+        for (Question question : mockExamQuestions) {
+            chapters.add(question.getChapter());
         }
+        model.addAttribute("chapters", chapters);
 
-        // 表示用に加工した問題リストを作成
-        List<QuestionView> questionsForView = answers.stream()
-                .map(answer -> {
-                    Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
-                    if (question == null)
-                        return null;
-
-                    QuestionView view = new QuestionView();
-                    view.setQuestion(question.getQuestion());
-                    view.setCorrect(answer.isCorrect());
-                    view.setChoices(question.getChoices());
-                    view.setSelectedChoiceId(answer.getSelectedChoiceId());
-                    return view;
-                })
-                .filter(Objects::nonNull)
-                .toList();
-
-        model.addAttribute("questions", questionsForView);
-
-        // 通常問題のみ記録を保存
-        Long userId = (Long) session.getAttribute("userId");
-        System.out.println("ユーザーID: " + userId);
-
-        if (userId != null && !Boolean.TRUE.equals(isMockExam)) {
-            System.out.println("保存処理に入るよ〜！");
-
-            Long firstQuestionId = answers.get(0).getQuestionId();
-            Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
-
-            if (firstQuestion != null) {
-                System.out.println(
-                        "記録保存情報: chapter=" + firstQuestion.getChapter() + ", title=" + firstQuestion.getChapterTitle());
-
-                quizRecordService.saveQuizRecord(
-                        correctCount,
-                        answers.size(),
-                        firstQuestion.getChapter(),
-                        firstQuestion.getChapterTitle(),
-                        userId);
-
-                System.out.println("保存処理呼び出し完了！");
-            } else {
-                System.out.println("firstQuestionがnullだったよ😥");
-            }
+        // ★ 模擬試験の保存処理
+        if (userId != null) {
+            quizRecordService.saveQuizRecord(
+                correctCount,
+                answers.size(),
+                0,                     // 章番号は「模擬試験」として0に
+                "模擬試験",           // タイトルもセット
+                userId,
+                true                  // isMockExam = true
+            );
         } else {
-            System.out.println("保存スキップされたよ〜（userIdなし or 模擬試験）");
+            System.out.println("模擬試験だけど userId が null でした🥲");
         }
 
-        return "result"; // 結果ページに遷移
+    } else if (!answers.isEmpty()) {
+        Long firstQuestionId = answers.get(0).getQuestionId();
+        Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
+
+        if (firstQuestion != null) {
+            model.addAttribute("chapterNumber", firstQuestion.getChapter());
+            model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
+
+            // 通常問題の履歴保存処理
+            if (userId != null) {
+                quizRecordService.saveQuizRecord(
+                    correctCount,
+                    answers.size(),
+                    firstQuestion.getChapter(),
+                    firstQuestion.getChapterTitle(),
+                    userId,
+                    false // isMockExam = false
+                );
+            }
+        }
     }
+
+    // 画面用の質問Viewリスト
+    List<QuestionView> questionsForView = answers.stream()
+        .map(answer -> {
+            Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
+            if (question == null) return null;
+
+            QuestionView view = new QuestionView();
+            view.setQuestion(question.getQuestion());
+            view.setCorrect(answer.isCorrect());
+            view.setChoices(question.getChoices());
+            view.setSelectedChoiceId(answer.getSelectedChoiceId());
+            return view;
+        })
+        .filter(Objects::nonNull)
+        .toList();
+
+    model.addAttribute("questions", questionsForView);
+
+    return "result";
+}
 
     @GetMapping("/reset")
     public String resetAnswers(HttpSession session) {
