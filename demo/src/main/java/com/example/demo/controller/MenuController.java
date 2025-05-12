@@ -104,19 +104,30 @@ public String evaluateAnswers(Model model, HttpSession session) {
     List<Answer> answers = answerRepository.findAll();
     int correctCount = (int) answers.stream().filter(Answer::isCorrect).count();
 
-    model.addAttribute("result", new Result(correctCount, answers.size()));
+    //
+    //model.addAttribute("result", new Result(correctCount, answers.size()));
 
     Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
     Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
     Long userId = (Long) session.getAttribute("userId");
 
+        // ✅ 分母：模試なら40、通常は回答数
+        int totalCount = Boolean.TRUE.equals(isMockExam) ? 40 : answers.size();
+        model.addAttribute("result", new Result(correctCount, totalCount));
+
     if (Boolean.TRUE.equals(isMockExam)) {
         model.addAttribute("chapterNumber", "模擬試験");
         model.addAttribute("chapterTitle", "");
-
-        double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
-        model.addAttribute("isPass", percentage >= 65.0);
         model.addAttribute("isMockExam", true);
+
+        //double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
+        //model.addAttribute("isPass", percentage >= 65.0);
+        //
+        //model.addAttribute("isMockExam", true);
+
+        double percentage = ((double) correctCount / 40.0) * 100;
+        boolean isPass = percentage >= 65.0;
+        model.addAttribute("isPass", isPass);
 
         List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
         List<Integer> chapters = new ArrayList<>();
@@ -151,7 +162,8 @@ public String evaluateAnswers(Model model, HttpSession session) {
             if (userId != null) {
                 quizRecordService.saveQuizRecord(
                     correctCount,
-                    answers.size(),
+                    totalCount,//　下の奴の代わりに入れるかも
+                    //answers.size(),
                     firstQuestion.getChapter(),
                     firstQuestion.getChapterTitle(),
                     userId,

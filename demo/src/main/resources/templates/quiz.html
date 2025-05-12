@@ -133,6 +133,24 @@
         transform: translate(-50%, -50%) scale(1);
       }
     }
+
+    .timer-bar-container {
+  width: 155px; /* ← 好きな横幅に変更してOK！ */
+  background-color: #eee;
+  border-radius: 10px;
+  height: 5px;
+  margin-top: 10px;
+  overflow: hidden;
+  margin-left: auto; /* ← これで右寄せにする */
+  margin-right: 0;
+}
+
+  .timer-bar {
+  height: 100%;
+  background-color: #e57c3a;
+  width: 100%;
+  transition: width 1s linear;
+}
   </style>
 </head>
 
@@ -146,7 +164,15 @@
       <span th:if="${chapterNumber == null}">
         模擬試験
       </span>
-      <br /><br />
+      <!-- 🌟 タイマー表示：模擬試験のときだけ表示されるよ -->
+    <div th:if="${chapterNumber == null}" id="timer" style="float: right; font-weight: bold; font-size: 20px; color: #e57c3a;">
+      残り時間: 60:00
+    </div>
+    <!-- タイマー用プログレスバー -->
+<div th:if="${chapterNumber == null}" class="timer-bar-container">
+  <div class="timer-bar" id="timer-bar"></div>
+</div>
+      
     </div>
 
     <div class="question-box">
@@ -184,6 +210,53 @@
   </div>
 
   <script th:inline="javascript">
+
+const chapterNumber = /*[[${chapterNumber}]]*/ null;
+  const displayNumber = /*[[${displayNumber}]]*/ 1;
+  const isMockExam = chapterNumber == null;
+
+  // ⭐ 60分タイマー（模擬試験のみ）
+  if (isMockExam && displayNumber === 1) {
+    localStorage.removeItem("mockExamStartTime");
+  }
+
+  if (isMockExam) {
+    const timerElement = document.getElementById('timer');
+    const timerBar = document.getElementById('timer-bar');
+    const startTimeKey = "mockExamStartTime";
+    const totalTime = 60 ; // 60分 = 3600秒
+
+    const now = Math.floor(Date.now() / 1000);
+    let startTime = localStorage.getItem(startTimeKey);
+
+    if (!startTime || isNaN(startTime)) {
+      startTime = now;
+      localStorage.setItem(startTimeKey, startTime);
+    } else {
+      startTime = parseInt(startTime, 10);
+    }
+
+    const updateTimer = () => {
+      const remaining = totalTime - (Math.floor(Date.now() / 1000) - startTime);
+
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        localStorage.removeItem(startTimeKey);
+        window.location.href = "/evaluate";
+        return;
+      }
+
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      timerElement.textContent = `残り時間: ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+      const percentRemaining = (remaining / totalTime) * 100;
+      timerBar.style.width = `${percentRemaining}%`;
+    };
+
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+  }
     const submitButton = document.getElementById('submit-button');
     const nextButton = document.getElementById('next-question');
     const radioButtons = document.querySelectorAll('input[type="radio"]');
