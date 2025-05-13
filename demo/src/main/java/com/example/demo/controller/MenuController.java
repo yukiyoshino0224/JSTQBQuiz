@@ -443,6 +443,7 @@ public String showChapterRecord(@PathVariable int chapterNumber, Model model, Ht
     List<QuizRecord> latest5 = records.stream()
         .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
         .limit(5)
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
         .toList();
 
     List<String> labels = latest5.stream()
@@ -478,6 +479,7 @@ public String showMockRecord(Model model, HttpSession session) {
     List<QuizRecord> latest5 = records.stream()
         .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
         .limit(5)
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
         .toList();
         List<String> labels = latest5.stream()
         .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
