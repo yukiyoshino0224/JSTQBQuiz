@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>履歴 - JSTQB学習アプリ</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            background-color: #f4f6fa;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: row;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            gap: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin: 30px 0 20px 0;
+            justify-content: center;
+        }
+
+        .tabs button {
+            padding: 0.5rem 1.2rem;
+            border: none;
+            background-color: #0f447c;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .tabs button.active {
+            background-color: #145DA0;
+        }
+
+        .left-panel {
+            flex: 1.3;
+            overflow-y: scroll;
+            max-height: 590px;
+            height: 590px;
+        }
+
+        .record-card {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        .right-panel {
+            flex: 1.7;
+            height: 560px;
+            background-color: #fff;
+            border-radius: 10px;
+            padding: 1rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .header {
+            background-color: #0f447c;
+            color: white;
+            padding: 50px 50px 30px;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            font-family: "Hiragino Sans", sans-serif;
+        }
+
+        .header-title {
+            font-size: 40px;
+            font-family: 'HGS明朝E', serif;
+            font-weight: bold;
+            margin: 0 auto;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+    </style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<div class="header">
+    <a th:href="@{/menu}" style="color: white; text-decoration: underline; font-size: 18px;">メニューへ</a>
+    <div class="header-title">JSTQB問題集</div>
+    <div style="font-size: 16px;">
+        ようこそ、<strong th:text="${username}">テスト太郎</strong>さん！
+        <a th:href="@{/logout}">
+            <button style="margin-left: 10px; font-size: 14px;">ログアウト</button>
+        </a>
+    </div>
+</div>
+
+<!-- 章切り替えタブ -->
+<div class="tabs">
+    <button onclick="showChapter(1)">第1章</button>
+    <button onclick="showChapter(2)">第2章</button>
+    <button onclick="showChapter(3)">第3章</button>
+    <button onclick="showChapter(4)">第4章</button>
+    <button onclick="showChapter(5)">第5章</button>
+    <button onclick="showChapter(6)">第6章</button>
+    <button onclick="showChapter(0)">模擬試験</button>
+</div>
+
+<div class="container">
+    <div class="left-panel">
+        <div th:each="record : ${records}" class="record-card" th:if="${record.chapter} == ${chapterNumber} or ${record.mockExam}">
+            <p th:if="${record.mockExam}">模擬試験の記録</p>
+            <p th:if="${!record.mockExam}">第 <span th:text="${record.chapter}"></span> 章: <span th:text="${record.chapterTitle}"></span></p>
+            <p>実施日: <span th:text="${#temporals.format(record.createdAt, 'yyyy/MM/dd HH:mm')}"></span></p>
+            <p>正解数: <span th:text="${record.correctCount}"></span> / <span th:text="${record.totalCount}"></span></p>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <h3>正答数の推移</h3>
+        <canvas id="chartCanvas" width="300" height="300"></canvas>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    function showChapter(chapter) {
+        if (chapter === 0) {
+            location.href = "/record/mock";
+        } else {
+            location.href = "/record/chapter/" + chapter;
+        }
+    }
+
+    const latestLabels = /*[[${labels}]]*/ [];
+    const correctCounts = /*[[${counts}]]*/ [];
+    const chapterNumber = /*[[${chapterNumber}]]*/ 1;
+
+    const ctx = document.getElementById('chartCanvas').getContext('2d');
+    const maxY = chapterNumber === 0 ? 40 : 10;
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: latestLabels,
+            datasets: [{
+                label: '正解数',
+                data: correctCounts,
+                backgroundColor: '#0f447c'
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: maxY,
+                    title: {
+                        display: true,
+                        text: '正解数'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: '実施日'
+                    }
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

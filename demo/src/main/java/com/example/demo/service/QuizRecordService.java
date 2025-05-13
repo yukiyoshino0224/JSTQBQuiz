@@ -41,4 +41,14 @@ public class QuizRecordService {
     public List<QuizRecord> getRecordsForUser(Long userId) {
         return quizRecordRepository.findByUserId(userId); 
     }
+
+    public List<QuizRecord> getRecordsByUserAndChapter(Long userId, int chapter) {
+        return quizRecordRepository.findByUserIdAndChapterOrderByCreatedAtDesc(userId, chapter);
+    }
+
+    public List<QuizRecord> getMockExamRecordsByUser(Long userId) {
+        return quizRecordRepository.findByUserIdAndIsMockExamTrueOrderByCreatedAtDesc(userId);
+    }
+    
+    
 }
