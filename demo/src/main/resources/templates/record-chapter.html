@@ -30,7 +30,7 @@
         .tabs button {
             padding: 0.5rem 1.2rem;
             border: none;
-            background-color: #0f447c;
+            background-color: #ccc;
             color: white;
             border-radius: 6px;
             cursor: pointer;
@@ -38,7 +38,7 @@
         }
 
         .tabs button.active {
-            background-color: #145DA0;
+            background-color: #0f447c;
         }
 
         .left-panel {
@@ -46,6 +46,7 @@
             overflow-y: scroll;
             max-height: 590px;
             height: 590px;
+            padding-right: 10px;
         }
 
         .record-card {
@@ -105,13 +106,13 @@
 
 <!-- 章切り替えタブ -->
 <div class="tabs">
-    <button onclick="showChapter(1)">第1章</button>
-    <button onclick="showChapter(2)">第2章</button>
-    <button onclick="showChapter(3)">第3章</button>
-    <button onclick="showChapter(4)">第4章</button>
-    <button onclick="showChapter(5)">第5章</button>
-    <button onclick="showChapter(6)">第6章</button>
-    <button onclick="showChapter(0)">模擬試験</button>
+    <button th:classappend="${chapterNumber == 1} ? 'active'" onclick="showChapter(1)">第1章</button>
+    <button th:classappend="${chapterNumber == 2} ? 'active'" onclick="showChapter(2)">第2章</button>
+    <button th:classappend="${chapterNumber == 3} ? 'active'" onclick="showChapter(3)">第3章</button>
+    <button th:classappend="${chapterNumber == 4} ? 'active'" onclick="showChapter(4)">第4章</button>
+    <button th:classappend="${chapterNumber == 5} ? 'active'" onclick="showChapter(5)">第5章</button>
+    <button th:classappend="${chapterNumber == 6} ? 'active'" onclick="showChapter(6)">第6章</button>
+    <button th:classappend="${chapterNumber == 0} ? 'active'" onclick="showChapter(0)">模擬試験</button>
 </div>
 
 <div class="container">
@@ -122,6 +123,11 @@
             <p>実施日: <span th:text="${#temporals.format(record.createdAt, 'yyyy/MM/dd HH:mm')}"></span></p>
             <p>正解数: <span th:text="${record.correctCount}"></span> / <span th:text="${record.totalCount}"></span></p>
         </div>
+
+        <div th:unless="${records.size() > 0}" class="record-card" style="text-align: center; color: #999;">
+            履歴がありません
+        </div>
+
     </div>
 
     <div class="right-panel">
