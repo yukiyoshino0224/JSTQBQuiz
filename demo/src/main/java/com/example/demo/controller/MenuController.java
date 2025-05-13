@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,8 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
 import org.springframework.security.core.Authentication;
 import com.example.demo.entity.User; // ✅ ここで必要！
+import java.util.Comparator;
+
 
 
 @Controller
@@ -45,8 +48,10 @@ public class MenuController {
     private UserRepository userRepository;
     @Autowired private QuizRecordRepository quizRecordRepository;
 
-
+    @Autowired
     private QuizRecordService quizRecordService;
+    
+
 
     // MenuController内にこのメソッドを追加する
     public void saveUserIdToSession(HttpSession session) {
@@ -427,18 +432,86 @@ public String evaluateAnswers(Model model, HttpSession session) {
         return "quiz";
     }
 
-    @GetMapping("/record")
-    public String showRecordPage(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
     
-        if (userId == null) {
-            return "redirect:/login"; // ← ログインしてなかったら戻す
-        }
+
+    @GetMapping("/record/chapter/{chapterNumber}")
+public String showChapterRecord(@PathVariable int chapterNumber, Model model, HttpSession session) {
+    Long userId = (Long) session.getAttribute("userId");
+    List<QuizRecord> records = quizRecordService.getRecordsByUserAndChapter(userId, chapterNumber);
+
+    // 正答率グラフ用：最新5件だけ
+    List<QuizRecord> latest5 = records.stream()
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+        .limit(5)
+        .toList();
+
+    List<String> labels = latest5.stream()
+        .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
+        .toList();
+
+    List<Integer> counts = latest5.stream()
+        .map(QuizRecord::getCorrectCount)
+        .toList();
+
+    model.addAttribute("labels", labels);
+    model.addAttribute("counts", counts);
+
+    model.addAttribute("records", records);
+    model.addAttribute("latestRecords", latest5);
+    model.addAttribute("chapterNumber", chapterNumber);
+
+    User user = userRepository.findById(userId).orElse(null);
+    if (user != null) {
+    model.addAttribute("username", user.getName());
+}
+
+
+    return "record-chapter";
+}
+
+@GetMapping("/record/mock")
+public String showMockRecord(Model model, HttpSession session) {
+    Long userId = (Long) session.getAttribute("userId");
+    List<QuizRecord> records = quizRecordService.getMockExamRecordsByUser(userId);
+
+    // 最新5件のみ抽出
+    List<QuizRecord> latest5 = records.stream()
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+        .limit(5)
+        .toList();
+        List<String> labels = latest5.stream()
+        .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
+        .toList();
     
-        List<QuizRecord> records = quizRecordRepository.findByUserId(userId);
-        model.addAttribute("records", records);
-        return "record";
-    }
+    List<Integer> counts = latest5.stream()
+        .map(QuizRecord::getCorrectCount)
+        .toList();
+    
+    model.addAttribute("labels", labels);
+    model.addAttribute("counts", counts);
+    
+
+    model.addAttribute("records", records);
+    model.addAttribute("latestRecords", latest5);
+    model.addAttribute("chapterNumber", 0); // 模擬試験を0で扱うと決めた場合
+    model.addAttribute("isMock", true); // モックフラグON！
+
+    User user = userRepository.findById(userId).orElse(null);
+if (user != null) {
+    model.addAttribute("username", user.getName());
+}
+
+
+    return "record-chapter";
+}
+
+@GetMapping("/record")
+public String redirectToFirstChapter() {
+    return "redirect:/record/chapter/1";
+}
+
+
+
     
 
 }

@@ -12,6 +12,8 @@ public interface QuizRecordRepository extends JpaRepository<QuizRecord, Long> {
     List<QuizRecord> findByUserId(Long userId);
     List<QuizRecord> findByChapter(int chapter);
     // QuizRecordRepository.java
-    
+    List<QuizRecord> findByUserIdAndChapterOrderByCreatedAtDesc(Long userId, int chapter);
+    List<QuizRecord> findByUserIdAndIsMockExamTrueOrderByCreatedAtDesc(Long userId);
+
 
 }
