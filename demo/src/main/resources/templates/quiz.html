@@ -225,7 +225,7 @@ const chapterNumber = /*[[${chapterNumber}]]*/ null;
     const timerElement = document.getElementById('timer');
     const timerBar = document.getElementById('timer-bar');
     const startTimeKey = "mockExamStartTime";
-    const totalTime = 60 ; // 60分 = 3600秒
+    const totalTime = 60 * 60// 60分 = 3600秒
 
     const now = Math.floor(Date.now() / 1000);
     let startTime = localStorage.getItem(startTimeKey);
