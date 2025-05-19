@@ -148,6 +148,10 @@ public class RecordTest {
         WebElement chapter_2 = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("第2章")));
         chapter_2.click();
 
+        for (int i = 0; i < 10; i++) {
+            
+        }
+
         
     }
 }
