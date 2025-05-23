@@ -31,94 +31,138 @@ public class RecordTest {
 
     WebDriver driver;
     WebDriverWait wait;
+    private Path testDirPath;
+
+    private String currentChapter = "default";
 
     @BeforeEach
-    public void setUp() {
-
+    public void setUp(TestInfo testInfo) throws IOException {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--incognito");
 
         driver = new ChromeDriver(options);
         wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+
+        // 初期値はdefaultでOK
+        currentChapter = "default";
     }
 
     @AfterEach
     public void tearDown(TestInfo testInfo) {
-        if (testInfo.getTags().contains("screenshot")){
-            takeScreenShot(testInfo.getDisplayName());
-        }
+        /*
+         * if (testInfo.getTags().contains("screenshot")) {
+         * takeFullPageScreenshots(testInfo.getDisplayName());
+         * }
+         */
         if (driver != null) {
             driver.quit();
         }
     }
 
-    public void takeScreenShot(String testCaseName) {
+    public void takeFullPageScreenshots(String testCaseName) {
         try {
-            Path screenshotDir = createScreenshotDirectory();
+            JavascriptExecutor js = (JavascriptExecutor) driver;
 
+            long totalHeight = (long) js.executeScript("return document.body.scrollHeight");
+            long viewportHeight = (long) js.executeScript("return window.innerHeight");
+            long scrollY = 0;
+            int count = 1;
+
+            while (scrollY < totalHeight) {
+                String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                String fileName = testCaseName + "_part" + count + "_" + timestamp + ".png";
+                Path destination = testDirPath.resolve(fileName);
+
+                File screenshotFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+                saveScreenshot(screenshotFile, destination);
+
+                scrollY += viewportHeight;
+                js.executeScript("window.scrollBy(0, arguments[0]);", viewportHeight);
+                Thread.sleep(500);
+
+                count++;
+            }
+
+            System.out.println("フルページスクリーンショット保存完了: " + count + "枚");
+
+        } catch (Exception e) {
+            System.out.println("フルページスクリーンショット保存エラー: " + e.getMessage());
+        }
+    }
+
+    public void takeSingleScreenshotInCurrentChapter(String label) {
+        try {
             String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-            String fileName = testCaseName + "_" + timestamp + ".png";
-            Path destination = screenshotDir.resolve(fileName);
+            String fileName = label + "_" + timestamp + ".png";
+            Path destination = testDirPath.resolve(fileName);
 
             File screenshotFile = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
             saveScreenshot(screenshotFile, destination);
 
-            System.out.println("保存完了" + destination);
-        } catch (IOException e) {
-            System.out.println("保存エラー" + e.getMessage());
+            System.out.println("evaluate画面の1枚スクリーンショット保存完了");
+
+        } catch (Exception e) {
+            System.out.println("evaluate画面スクリーンショット保存エラー: " + e.getMessage());
         }
     }
 
-    public Path createScreenshotDirectory() throws IOException {
-        Path dir = Paths.get("screenshots");
-        if (!Files.exists(dir)) {
-            Files.createDirectories(dir);
+    private Path createScreenshotDirectory(String chapterName) throws IOException {
+        String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String safeChapterName = chapterName.replaceAll("[^\\w\\d一-龠ぁ-んァ-ン]", "_");
+        Path baseDir = Paths.get("screenshots", safeChapterName, today);
+
+        if (!Files.exists(baseDir)) {
+            Files.createDirectories(baseDir);
         }
-        return dir;
+
+        int testCount = 1;
+        Path testDir;
+        do {
+            String folderName = String.format("test_%02d", testCount);
+            testDir = baseDir.resolve(folderName);
+            testCount++;
+        } while (Files.exists(testDir));
+
+        Files.createDirectories(testDir);
+        return testDir;
     }
 
     public void saveScreenshot(File screenshotFile, Path destinationPath) throws IOException {
         Files.copy(screenshotFile.toPath(), destinationPath);
     }
 
-    
-    public void login() { //共通処理とする
-
+    public void login() {
         driver.get("http://localhost:8080/login");
 
-        WebElement inputEmail = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='email']")));
+        WebElement inputEmail = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='email']")));
         inputEmail.sendKeys("first@time");
 
-        WebElement inputPassword = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='password']")));
+        WebElement inputPassword = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='password']")));
         inputPassword.sendKeys("firsttime");
 
-        WebElement loginButton = wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("button[type='submit']")));
+        WebElement loginButton = wait
+                .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("button[type='submit']")));
         loginButton.click();
     }
 
-    @Test
-    @Tag("screenshot")
-    public void RecordTestCaseNo_1() {
+    public void clickChapter(String chapterName) {
+        this.currentChapter = chapterName;
+        WebElement chapter = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText(chapterName)));
+        chapter.click();
 
-        login();
-
-        WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
-        privateHistory.click();
-
+        try {
+            this.testDirPath = createScreenshotDirectory(currentChapter);
+        } catch (IOException e) {
+            System.out.println("ディレクトリ作成エラー: " + e.getMessage());
+        }
     }
 
-    @Test
-    @Tag("screenshot")
-    public void RecordTestCaseNo_2() {
-
-        login();
-
-        WebElement chapter_1 = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("第1章")));
-        chapter_1.click();
-
-        for (int i = 0; i < 10 ; i++) {
-
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+    public void questionRepetition(int NumberOfQuestions, String testCaseName) {
+        for (int i = 0; i < NumberOfQuestions; i++) {
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
             WebElement label = choices.get(randomIndex);
@@ -131,27 +175,84 @@ public class RecordTest {
             nextQuestionButton.click();
         }
 
-        WebElement toMenu = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='button']")));
+        // evaluate画面のスクリーンショットを章のフォルダに保存
+        takeSingleScreenshotInCurrentChapter("evaluate");
+
+        // メニューに戻る
+        WebElement toMenu = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='button']")));
         toMenu.click();
 
+        // 履歴画面に遷移してスクリーンショット（フルページ）
         WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
         privateHistory.click();
 
+        // currentChapter は保持したまま、ファイル名のみ「履歴」
+        takeFullPageScreenshots("履歴_" + testCaseName);
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_1() {
+        login();
+        currentChapter = "ログイン後";
+        WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
+        privateHistory.click();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_2() {
+        login();
+        clickChapter("第1章");
+        questionRepetition(10, "RecordTestCaseNo_2");
     }
 
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_3() {
-
         login();
+        clickChapter("第2章");
+        questionRepetition(10, "RecordTestCaseNo_3");
+    }
 
-        WebElement chapter_2 = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("第2章")));
-        chapter_2.click();
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_4() {
+        login();
+        clickChapter("第3章");
+        questionRepetition(10, "RecordTestCaseNo_4");
+    }
 
-        for (int i = 0; i < 10; i++) {
-            
-        }
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_5() {
+        login();
+        clickChapter("第4章");
+        questionRepetition(10, "RecordTestCaseNo_5");
+    }
 
-        
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_6() {
+        login();
+        clickChapter("第5章");
+        questionRepetition(10, "RecordTestCaseNo_6");
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_7() {
+        login();
+        clickChapter("第6章");
+        questionRepetition(10, "RecordTestCaseNo_7");
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_8() {
+        login();
+        clickChapter("模擬試験");
+        questionRepetition(40, "RecordTestCaseNo_8");
     }
 }
