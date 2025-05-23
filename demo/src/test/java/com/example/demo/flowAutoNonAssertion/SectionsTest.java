@@ -1,4 +1,4 @@
-package com.example.demo.testOfEachSections;
+package com.example.demo.flowAutoNonAssertion;
 
 import java.time.Duration;
 import java.util.List;
@@ -31,11 +31,9 @@ public class SectionsTest {
 
     }
 
-
-
     @Test
     public void login() {
-        
+
         driver.get("http://localhost:8080/login");
 
         WebElement inputEmail = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("username")));
@@ -44,22 +42,25 @@ public class SectionsTest {
         WebElement inputPassword = wait.until(ExpectedConditions.visibilityOfElementLocated(By.name("password")));
         inputPassword.sendKeys("cccc");
 
-        WebElement loginButton = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='submit']")));
+        WebElement loginButton = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='submit']")));
         loginButton.click();
 
     }
 
-    @Test //一章
+    @Test // 一章
     public void FirstSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/1']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/1']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
@@ -71,17 +72,19 @@ public class SectionsTest {
         }
     }
 
-    @Test //二章
+    @Test // 二章
     public void secondSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/2']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/2']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
@@ -93,17 +96,19 @@ public class SectionsTest {
         }
     }
 
-    @Test //三章
+    @Test // 三章
     public void thirdSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/3']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/3']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
@@ -115,17 +120,19 @@ public class SectionsTest {
         }
     }
 
-    @Test //四章
+    @Test // 四章
     public void forthSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/4']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/4']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
@@ -136,17 +143,20 @@ public class SectionsTest {
             nextQuestionButton.click();
         }
     }
-    @Test //五章
+
+    @Test // 五章
     public void fifthSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/5']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/5']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
@@ -157,17 +167,20 @@ public class SectionsTest {
             nextQuestionButton.click();
         }
     }
-    @Test //六章
+
+    @Test // 六章
     public void sixthSectionSequence() {
         login();
-        WebElement firstSection = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/6']")));
+        WebElement firstSection = wait
+                .until(ExpectedConditions.elementToBeClickable(By.cssSelector("a[href='/chapter/6']")));
         firstSection.click();
 
         for (int i = 0; i < 9; i++) {
-            List<WebElement> choices = wait.until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
+            List<WebElement> choices = wait
+                    .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
             Random random = new Random();
             int randomIndex = random.nextInt(choices.size());
-             WebElement label = choices.get(randomIndex);
+            WebElement label = choices.get(randomIndex);
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", label);
 
             WebElement decicdeAnswerButton = wait
