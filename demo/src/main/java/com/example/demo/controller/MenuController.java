@@ -37,8 +37,6 @@ import org.springframework.security.core.Authentication;
 import com.example.demo.entity.User; // ✅ ここで必要！
 import java.util.Comparator;
 
-
-
 @Controller
 public class MenuController {
 
@@ -46,12 +44,11 @@ public class MenuController {
     private final QuizService quizService;
     @Autowired
     private UserRepository userRepository;
-    @Autowired private QuizRecordRepository quizRecordRepository;
+    @Autowired
+    private QuizRecordRepository quizRecordRepository;
 
     @Autowired
     private QuizRecordService quizRecordService;
-    
-
 
     // MenuController内にこのメソッドを追加する
     public void saveUserIdToSession(HttpSession session) {
@@ -74,130 +71,134 @@ public class MenuController {
 
     public String showMenu(HttpSession session) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    if (auth != null && auth.getPrincipal() instanceof UserDetails) {
-        UserDetails userDetails = (UserDetails) auth.getPrincipal();
-        User user = userRepository.findByEmail(userDetails.getUsername()); // ← メールで検索！
-        if (user != null) {
-            session.setAttribute("userId", user.getId()); // ← これが履歴保存のカギ！
-            session.setAttribute("username", user.getName()); // ← または getEmail() にしてもOK！
+        if (auth != null && auth.getPrincipal() instanceof UserDetails) {
+            UserDetails userDetails = (UserDetails) auth.getPrincipal();
+            User user = userRepository.findByEmail(userDetails.getUsername()); // ← メールで検索！
+            if (user != null) {
+                session.setAttribute("userId", user.getId()); // ← これが履歴保存のカギ！
+                session.setAttribute("username", user.getName()); // ← または getEmail() にしてもOK！
 
-            System.out.println("セッションにuserIdを保存したよ！ID: " + user.getId());
+                System.out.println("セッションにuserIdを保存したよ！ID: " + user.getId());
+            }
         }
-    }
-    
+
         answerRepository.deleteAll();
         return "menu";
     }
 
     // public String showMenu(HttpServletResponse response, HttpSession session) {
 
-    //     response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-    //     response.setHeader("Pragma", "no-cache");
-    //     response.setDateHeader("Expires", 0);
+    // response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate,
+    // max-age=0");
+    // response.setHeader("Pragma", "no-cache");
+    // response.setDateHeader("Expires", 0);
 
-    //     org.springframework.security.core.Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    //     String username = auth.getName();
-    //     session.setAttribute("username", username);
-    //     answerRepository.deleteAll();
-    //     return "menu";
+    // org.springframework.security.core.Authentication auth =
+    // SecurityContextHolder.getContext().getAuthentication();
+    // String username = auth.getName();
+    // session.setAttribute("username", username);
+    // answerRepository.deleteAll();
+    // return "menu";
     // }
 
     @GetMapping("/evaluate")
-public String evaluateAnswers(Model model, HttpSession session) {
-    System.out.println("=== /evaluate 処理開始 ===");
+    public String evaluateAnswers(Model model, HttpSession session) {
+        System.out.println("=== /evaluate 処理開始 ===");
 
-    List<Answer> answers = answerRepository.findAll();
-    int correctCount = (int) answers.stream().filter(Answer::isCorrect).count();
+        List<Answer> answers = answerRepository.findAll();
+        int correctCount = (int) answers.stream().filter(Answer::isCorrect).count();
 
-    //
-    //model.addAttribute("result", new Result(correctCount, answers.size()));
+        //
+        // model.addAttribute("result", new Result(correctCount, answers.size()));
 
-    Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
-    Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
-    Long userId = (Long) session.getAttribute("userId");
+        Boolean isMockExam = (Boolean) session.getAttribute("isMockExam");
+        Map<Long, Question> questionMap = (Map<Long, Question>) session.getAttribute("questionMap");
+        Long userId = (Long) session.getAttribute("userId");
 
         // ✅ 分母：模試なら40、通常は回答数
         int totalCount = Boolean.TRUE.equals(isMockExam) ? 40 : answers.size();
         model.addAttribute("result", new Result(correctCount, totalCount));
 
-    if (Boolean.TRUE.equals(isMockExam)) {
-        model.addAttribute("chapterNumber", "模擬試験");
-        model.addAttribute("chapterTitle", "");
-        model.addAttribute("isMockExam", true);
+        if (Boolean.TRUE.equals(isMockExam)) {
+            model.addAttribute("chapterNumber", "模擬試験");
+            model.addAttribute("chapterTitle", "");
+            model.addAttribute("isMockExam", true);
 
-        //double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount / answers.size()) * 100;
-        //model.addAttribute("isPass", percentage >= 65.0);
-        //
-        //model.addAttribute("isMockExam", true);
+            // double percentage = (answers.size() == 0) ? 0.0 : ((double) correctCount /
+            // answers.size()) * 100;
+            // model.addAttribute("isPass", percentage >= 65.0);
+            //
+            // model.addAttribute("isMockExam", true);
 
-        double percentage = ((double) correctCount / 40.0) * 100;
-        boolean isPass = percentage >= 65.0;
-        model.addAttribute("isPass", isPass);
+            double percentage = ((double) correctCount / 40.0) * 100;
+            boolean isPass = percentage >= 65.0;
+            model.addAttribute("isPass", isPass);
 
-        List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
-        List<Integer> chapters = new ArrayList<>();
-        for (Question question : mockExamQuestions) {
-            chapters.add(question.getChapter());
-        }
-        model.addAttribute("chapters", chapters);
+            List<Question> mockExamQuestions = (List<Question>) session.getAttribute("mockExamQuestions");
+            List<Integer> chapters = new ArrayList<>();
+            for (Question question : mockExamQuestions) {
+                chapters.add(question.getChapter());
+            }
+            model.addAttribute("chapters", chapters);
 
-        // ★ 模擬試験の保存処理
-        if (userId != null) {
-            quizRecordService.saveQuizRecord(
-                correctCount,
-                answers.size(),
-                0,                     // 章番号は「模擬試験」として0に
-                "模擬試験",           // タイトルもセット
-                userId,
-                true                  // isMockExam = true
-            );
-        } else {
-            System.out.println("模擬試験だけど userId が null でした🥲");
-        }
-
-    } else if (!answers.isEmpty()) {
-        Long firstQuestionId = answers.get(0).getQuestionId();
-        Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
-
-        if (firstQuestion != null) {
-            model.addAttribute("chapterNumber", firstQuestion.getChapter());
-            model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
-
-            // 通常問題の履歴保存処理
+            // ★ 模擬試験の保存処理
             if (userId != null) {
                 quizRecordService.saveQuizRecord(
-                    correctCount,
-                    totalCount,//　下の奴の代わりに入れるかも
-                    //answers.size(),
-                    firstQuestion.getChapter(),
-                    firstQuestion.getChapterTitle(),
-                    userId,
-                    false // isMockExam = false
+                        correctCount,
+                        answers.size(),
+                        0, // 章番号は「模擬試験」として0に
+                        "模擬試験", // タイトルもセット
+                        userId,
+                        true // isMockExam = true
                 );
+            } else {
+                System.out.println("模擬試験だけど userId が null でした🥲");
+            }
+
+        } else if (!answers.isEmpty()) {
+            Long firstQuestionId = answers.get(0).getQuestionId();
+            Question firstQuestion = questionMap != null ? questionMap.get(firstQuestionId) : null;
+
+            if (firstQuestion != null) {
+                model.addAttribute("chapterNumber", firstQuestion.getChapter());
+                model.addAttribute("chapterTitle", firstQuestion.getChapterTitle());
+
+                // 通常問題の履歴保存処理
+                if (userId != null) {
+                    quizRecordService.saveQuizRecord(
+                            correctCount,
+                            totalCount, // 下の奴の代わりに入れるかも
+                            // answers.size(),
+                            firstQuestion.getChapter(),
+                            firstQuestion.getChapterTitle(),
+                            userId,
+                            false // isMockExam = false
+                    );
+                }
             }
         }
+
+        // 画面用の質問Viewリスト
+        List<QuestionView> questionsForView = answers.stream()
+                .map(answer -> {
+                    Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
+                    if (question == null)
+                        return null;
+
+                    QuestionView view = new QuestionView();
+                    view.setQuestion(question.getQuestion());
+                    view.setCorrect(answer.isCorrect());
+                    view.setChoices(question.getChoices());
+                    view.setSelectedChoiceId(answer.getSelectedChoiceId());
+                    return view;
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+        model.addAttribute("questions", questionsForView);
+
+        return "result";
     }
-
-    // 画面用の質問Viewリスト
-    List<QuestionView> questionsForView = answers.stream()
-        .map(answer -> {
-            Question question = questionMap != null ? questionMap.get(answer.getQuestionId()) : null;
-            if (question == null) return null;
-
-            QuestionView view = new QuestionView();
-            view.setQuestion(question.getQuestion());
-            view.setCorrect(answer.isCorrect());
-            view.setChoices(question.getChoices());
-            view.setSelectedChoiceId(answer.getSelectedChoiceId());
-            return view;
-        })
-        .filter(Objects::nonNull)
-        .toList();
-
-    model.addAttribute("questions", questionsForView);
-
-    return "result";
-}
 
     @GetMapping("/reset")
     public String resetAnswers(HttpSession session) {
@@ -232,6 +233,11 @@ public String evaluateAnswers(Model model, HttpSession session) {
 
         if (!questions.isEmpty() && questionNumber >= 1 && questionNumber <= questions.size()) {
             Question question = questions.get(questionNumber - 1);
+
+            // ----------正解が一番上に来るように選択肢をソート------------
+            List<Choice> sortedChoices = new ArrayList<>(question.getChoices());
+            sortedChoices.sort((c1, c2) -> Boolean.compare(!c1.isCorrect(), !c2.isCorrect()));
+            question.setChoices(sortedChoices);
 
             // ✅ 順番通りに進んでいるかチェック
             List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
@@ -360,6 +366,11 @@ public String evaluateAnswers(Model model, HttpSession session) {
         if (!mockExamQuestions.isEmpty()) {
             Question question = mockExamQuestions.get(0);
 
+            // -------------------✅ 選択肢をソート
+            List<Choice> sortedChoices = new ArrayList<>(question.getChoices());
+            sortedChoices.sort((c1, c2) -> Boolean.compare(!c1.isCorrect(), !c2.isCorrect()));
+            question.setChoices(sortedChoices);
+
             session.setAttribute("mockExamQuestions", mockExamQuestions);
             session.setAttribute("questionMap", questionMap);
             session.setAttribute("currentQuestionIndex", 0);
@@ -402,6 +413,16 @@ public String evaluateAnswers(Model model, HttpSession session) {
         // 現在の問題を取得
         Question question = mockExamQuestions.get(questionNumber - 1);
 
+
+
+
+        // ------------------✅ 選択肢をソート
+        List<Choice> sortedChoices = new ArrayList<>(question.getChoices());
+        sortedChoices.sort((c1, c2) -> Boolean.compare(!c1.isCorrect(), !c2.isCorrect()));
+        question.setChoices(sortedChoices);
+
+
+        
         // 解答済みの問題番号リストを取得
         List<Integer> answeredQuestions = (List<Integer>) session.getAttribute("answeredQuestions");
         if (answeredQuestions == null) {
@@ -432,99 +453,89 @@ public String evaluateAnswers(Model model, HttpSession session) {
         return "quiz";
     }
 
-    
-
     @GetMapping("/record/chapter/{chapterNumber}")
-public String showChapterRecord(@PathVariable int chapterNumber, Model model, HttpSession session) {
-    Long userId = (Long) session.getAttribute("userId");
-    List<QuizRecord> allRecords = quizRecordService.getRecordsByUserAndChapter(userId, chapterNumber);
+    public String showChapterRecord(@PathVariable int chapterNumber, Model model, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        List<QuizRecord> allRecords = quizRecordService.getRecordsByUserAndChapter(userId, chapterNumber);
 
-    List<QuizRecord> latest10 = allRecords.stream()
-    .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
-    .limit(10)
-    .toList();
+        List<QuizRecord> latest10 = allRecords.stream()
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+                .limit(10)
+                .toList();
 
+        // 正答率グラフ用：最新5件だけ
+        List<QuizRecord> latest5 = allRecords.stream()
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+                .limit(5)
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
+                .toList();
 
-    // 正答率グラフ用：最新5件だけ
-    List<QuizRecord> latest5 = allRecords.stream()
-        .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
-        .limit(5)
-        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
-        .toList();
-
-    List<String> labels = latest5.stream()
-        .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
-        .toList();
-
-    List<Integer> counts = latest5.stream()
-        .map(QuizRecord::getCorrectCount)
-        .toList();
-
-    model.addAttribute("labels", labels);
-    model.addAttribute("counts", counts);
-
-    model.addAttribute("records", latest10);
-    model.addAttribute("latestRecords", latest5);
-    model.addAttribute("chapterNumber", chapterNumber);
-
-    User user = userRepository.findById(userId).orElse(null);
-    if (user != null) {
-    model.addAttribute("username", user.getName());
-}
-
-
-    return "record-chapter";
-}
-
-@GetMapping("/record/mock")
-public String showMockRecord(Model model, HttpSession session) {
-    Long userId = (Long) session.getAttribute("userId");
-    List<QuizRecord> allRecords = quizRecordService.getMockExamRecordsByUser(userId);
-
-    List<QuizRecord> latest10 = allRecords.stream()
-    .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
-    .limit(10)
-    .toList();
-
-    // 最新5件のみ抽出
-    List<QuizRecord> latest5 = allRecords.stream()
-        .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
-        .limit(5)
-        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
-        .toList();
         List<String> labels = latest5.stream()
-        .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
-        .toList();
-    
-    List<Integer> counts = latest5.stream()
-        .map(QuizRecord::getCorrectCount)
-        .toList();
-    
-    model.addAttribute("labels", labels);
-    model.addAttribute("counts", counts);
-    
+                .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
+                .toList();
 
-    model.addAttribute("records", latest10);
-    model.addAttribute("latestRecords", latest5);
-    model.addAttribute("chapterNumber", 0); // 模擬試験を0で扱うと決めた場合
-    model.addAttribute("isMock", true); // モックフラグON！
+        List<Integer> counts = latest5.stream()
+                .map(QuizRecord::getCorrectCount)
+                .toList();
 
-    User user = userRepository.findById(userId).orElse(null);
-if (user != null) {
-    model.addAttribute("username", user.getName());
-}
+        model.addAttribute("labels", labels);
+        model.addAttribute("counts", counts);
 
+        model.addAttribute("records", latest10);
+        model.addAttribute("latestRecords", latest5);
+        model.addAttribute("chapterNumber", chapterNumber);
 
-    return "record-chapter";
-}
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            model.addAttribute("username", user.getName());
+        }
 
-@GetMapping("/record")
-public String redirectToFirstChapter() {
-    return "redirect:/record/chapter/1";
-}
+        return "record-chapter";
+    }
 
+    @GetMapping("/record/mock")
+    public String showMockRecord(Model model, HttpSession session) {
+        Long userId = (Long) session.getAttribute("userId");
+        List<QuizRecord> allRecords = quizRecordService.getMockExamRecordsByUser(userId);
 
+        List<QuizRecord> latest10 = allRecords.stream()
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+                .limit(10)
+                .toList();
 
-    
+        // 最新5件のみ抽出
+        List<QuizRecord> latest5 = allRecords.stream()
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+                .limit(5)
+                .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
+                .toList();
+        List<String> labels = latest5.stream()
+                .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
+                .toList();
+
+        List<Integer> counts = latest5.stream()
+                .map(QuizRecord::getCorrectCount)
+                .toList();
+
+        model.addAttribute("labels", labels);
+        model.addAttribute("counts", counts);
+
+        model.addAttribute("records", latest10);
+        model.addAttribute("latestRecords", latest5);
+        model.addAttribute("chapterNumber", 0); // 模擬試験を0で扱うと決めた場合
+        model.addAttribute("isMock", true); // モックフラグON！
+
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            model.addAttribute("username", user.getName());
+        }
+
+        return "record-chapter";
+    }
+
+    @GetMapping("/record")
+    public String redirectToFirstChapter() {
+        return "redirect:/record/chapter/1";
+    }
 
 }
