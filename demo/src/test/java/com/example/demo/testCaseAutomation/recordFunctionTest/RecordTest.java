@@ -131,16 +131,16 @@ public class RecordTest {
         Files.copy(screenshotFile.toPath(), destinationPath);
     }
 
-    public void login() {
+    public void login(String mailAddress, String password) {
         driver.get("http://localhost:8080/login");
 
         WebElement inputEmail = wait
                 .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='email']")));
-        inputEmail.sendKeys("first@time");
+        inputEmail.sendKeys(mailAddress);
 
         WebElement inputPassword = wait
                 .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("input[type='password']")));
-        inputPassword.sendKeys("firsttime");
+        inputPassword.sendKeys(password);
 
         WebElement loginButton = wait
                 .until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("button[type='submit']")));
@@ -184,17 +184,23 @@ public class RecordTest {
         toMenu.click();
 
         // 履歴画面に遷移してスクリーンショット（フルページ）
-        WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
-        privateHistory.click();
+        //WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
+        //privateHistory.click();
+        clickPartialLinkText("履歴");
 
         // currentChapter は保持したまま、ファイル名のみ「履歴」
         takeFullPageScreenshots("履歴_" + testCaseName);
     }
 
+    public void clickPartialLinkText(String element) {
+        WebElement clickableElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText(element))); 
+        clickableElement.click();
+    }
+
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_1() {
-        login();
+        login("first@time", "firsttime");
         currentChapter = "ログイン後";
         WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
         privateHistory.click();
@@ -203,7 +209,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_2() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第1章");
         questionRepetition(10, "RecordTestCaseNo_2");
     }
@@ -211,7 +217,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_3() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第2章");
         questionRepetition(10, "RecordTestCaseNo_3");
     }
@@ -219,7 +225,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_4() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第3章");
         questionRepetition(10, "RecordTestCaseNo_4");
     }
@@ -227,7 +233,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_5() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第4章");
         questionRepetition(10, "RecordTestCaseNo_5");
     }
@@ -235,7 +241,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_6() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第5章");
         questionRepetition(10, "RecordTestCaseNo_6");
     }
@@ -243,7 +249,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_7() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("第6章");
         questionRepetition(10, "RecordTestCaseNo_7");
     }
@@ -251,8 +257,21 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_8() {
-        login();
+        login("first@time", "firsttime");
         clickChapter("模擬試験");
         questionRepetition(40, "RecordTestCaseNo_8");
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_9() {
+        login("test@user1", "user1");
+        clickChapter("第1章");
+        questionRepetition(10, "RecordTestCaseNo_9");
+        clickPartialLinkText("ログアウト");
+        login("test@user2", "user2");
+        clickChapter("第2章");
+        questionRepetition(10, "RecordTestCaseNo_9");
+        clickPartialLinkText("ログアウト");
     }
 }
