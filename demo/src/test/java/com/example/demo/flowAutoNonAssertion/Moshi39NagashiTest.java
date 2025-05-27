@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.flowAutoNonAssertion;
 
 import java.time.Duration;
 import java.util.List;
