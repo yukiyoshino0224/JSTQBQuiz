@@ -2,36 +2,108 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>一問一答アプリ - メニュー</title>
-    <link rel="stylesheet" type="text/css" href="styles.css"> <!-- CSSのリンク -->
+    <link rel="stylesheet" type="text/css" href="styles.css">
     <meta http-equiv="Cache-Control" content="no-store" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
 
+    <style>
+        body {
+            background-color: #f8f8f8;
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        .menu-wrapper {
+            max-width: 800px;
+            margin: 0 auto 4rem auto;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-list {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            list-style: none;
+        }
+
+        .menu-link {
+            position: relative;
+            display: block;
+            padding: 20px 24px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            color: #333;
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .menu-link:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .mock-link {
+            border-left: 6px solid #e57c3a;
+            background-color: #fef6f6;
+        }
+
+        .mock-link::after {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background-color: #e57c3a;
+            color: white;
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 6px;
+        }
+
+        .record-link {
+            background: linear-gradient(to right, #444, #666);
+            color: #fff;
+            border: none;
+            font-weight: bold;
+        }
+
+        .record-link:hover {
+            background: linear-gradient(to right, #555, #777);
+        }
+    </style>
 </head>
 <body>
     <div th:replace="fragments/header :: header"></div>
+
     <div class="title-container">
         <h1 class="title">JSTQB問題集</h1>
     </div>
-    <ul class="menu-list">
-        <li><a class="menu-link" th:href="@{/chapter/1}">第1章　テストの基礎</a></li>
-        <li><a class="menu-link" th:href="@{/chapter/2}">第2章　ソフトウェア開発ライフサイクル全体を通してのテスト</a></li>
-        <li><a class="menu-link" th:href="@{/chapter/3}">第3章　静的テスト</a></li>
-        <li><a class="menu-link" th:href="@{/chapter/4}">第4章　テスト分析と設計</a></li>
-        <li><a class="menu-link" th:href="@{/chapter/5}">第5章　テスト活動のマネジメント</a></li>
-        <li><a class="menu-link" th:href="@{/chapter/6}">第6章　テストツール</a></li>
-        <li><a class="menu-link" th:href="@{/quiz/random}">模擬試験</a></li>
-        <li><a class="menu-link" th:href="@{/record}">履歴</a></li>
-    </ul>
+
+    <div class="menu-wrapper">
+        <ul class="menu-list">
+            <li><a class="menu-link" th:href="@{/chapter/1}">第1章　テストの基礎</a></li>
+            <li><a class="menu-link" th:href="@{/chapter/2}">第2章　ソフトウェア開発ライフサイクル全体を通してのテスト</a></li>
+            <li><a class="menu-link" th:href="@{/chapter/3}">第3章　静的テスト</a></li>
+            <li><a class="menu-link" th:href="@{/chapter/4}">第4章　テスト分析と設計</a></li>
+            <li><a class="menu-link" th:href="@{/chapter/5}">第5章　テスト活動のマネジメント</a></li>
+            <li><a class="menu-link" th:href="@{/chapter/6}">第6章　テストツール</a></li>
+            <li><a class="menu-link mock-link" th:href="@{/quiz/random}">模擬試験</a></li>
+            <li><a class="menu-link record-link" th:href="@{/record}">履歴</a></li>
+        </ul>
+    </div>
 
     <script>
         window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            // 🔁 戻ってキャッシュから表示されたら強制リセットへ
-            location.href = "/reset";
-        }
+            if (event.persisted) {
+                location.href = "/reset";
+            }
         });
     </script>
-    
 </body>
 </html>

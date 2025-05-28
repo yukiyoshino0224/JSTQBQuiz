@@ -437,12 +437,19 @@ public String evaluateAnswers(Model model, HttpSession session) {
     @GetMapping("/record/chapter/{chapterNumber}")
 public String showChapterRecord(@PathVariable int chapterNumber, Model model, HttpSession session) {
     Long userId = (Long) session.getAttribute("userId");
-    List<QuizRecord> records = quizRecordService.getRecordsByUserAndChapter(userId, chapterNumber);
+    List<QuizRecord> allRecords = quizRecordService.getRecordsByUserAndChapter(userId, chapterNumber);
+
+    List<QuizRecord> latest10 = allRecords.stream()
+    .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+    .limit(10)
+    .toList();
+
 
     // 正答率グラフ用：最新5件だけ
-    List<QuizRecord> latest5 = records.stream()
+    List<QuizRecord> latest5 = allRecords.stream()
         .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
         .limit(5)
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
         .toList();
 
     List<String> labels = latest5.stream()
@@ -456,7 +463,7 @@ public String showChapterRecord(@PathVariable int chapterNumber, Model model, Ht
     model.addAttribute("labels", labels);
     model.addAttribute("counts", counts);
 
-    model.addAttribute("records", records);
+    model.addAttribute("records", latest10);
     model.addAttribute("latestRecords", latest5);
     model.addAttribute("chapterNumber", chapterNumber);
 
@@ -472,12 +479,18 @@ public String showChapterRecord(@PathVariable int chapterNumber, Model model, Ht
 @GetMapping("/record/mock")
 public String showMockRecord(Model model, HttpSession session) {
     Long userId = (Long) session.getAttribute("userId");
-    List<QuizRecord> records = quizRecordService.getMockExamRecordsByUser(userId);
+    List<QuizRecord> allRecords = quizRecordService.getMockExamRecordsByUser(userId);
+
+    List<QuizRecord> latest10 = allRecords.stream()
+    .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
+    .limit(10)
+    .toList();
 
     // 最新5件のみ抽出
-    List<QuizRecord> latest5 = records.stream()
+    List<QuizRecord> latest5 = allRecords.stream()
         .sorted(Comparator.comparing(QuizRecord::getCreatedAt).reversed())
         .limit(5)
+        .sorted(Comparator.comparing(QuizRecord::getCreatedAt))
         .toList();
         List<String> labels = latest5.stream()
         .map(r -> r.getCreatedAt().format(DateTimeFormatter.ofPattern("MM/dd HH:mm")))
@@ -491,7 +504,7 @@ public String showMockRecord(Model model, HttpSession session) {
     model.addAttribute("counts", counts);
     
 
-    model.addAttribute("records", records);
+    model.addAttribute("records", latest10);
     model.addAttribute("latestRecords", latest5);
     model.addAttribute("chapterNumber", 0); // 模擬試験を0で扱うと決めた場合
     model.addAttribute("isMock", true); // モックフラグON！
