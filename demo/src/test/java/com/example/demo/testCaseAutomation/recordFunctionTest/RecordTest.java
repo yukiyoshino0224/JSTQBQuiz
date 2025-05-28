@@ -1,4 +1,4 @@
-package com.example.demo.testCaseAutomation.recordFunctionTest;
+﻿package com.example.demo.testCaseAutomation.recordFunctionTest;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -49,11 +50,11 @@ public class RecordTest {
 
     @AfterEach
     public void tearDown(TestInfo testInfo) {
-        /*
-         * if (testInfo.getTags().contains("screenshot")) {
-         * takeFullPageScreenshots(testInfo.getDisplayName());
-         * }
-         */
+
+        if (testInfo.getTags().contains("screenshot")) {
+            takeFullPageScreenshots(testInfo.getDisplayName());
+        }
+
         if (driver != null) {
             driver.quit();
         }
@@ -106,25 +107,17 @@ public class RecordTest {
         }
     }
 
-    private Path createScreenshotDirectory(String chapterName) throws IOException {
-        String today = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String safeChapterName = chapterName.replaceAll("[^\\w\\d一-龠ぁ-んァ-ン]", "_");
-        Path baseDir = Paths.get("screenshots", safeChapterName, today);
+    private Path createScreenshotDirectory(String testCaseName) throws IOException {
+        LocalDateTime now = LocalDateTime.now();
+        String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
+        String month = now.format(DateTimeFormatter.ofPattern("MM"));
+        String day = now.format(DateTimeFormatter.ofPattern("dd"));
+        String hourMinute = now.format(DateTimeFormatter.ofPattern("H時m分"));
 
-        if (!Files.exists(baseDir)) {
-            Files.createDirectories(baseDir);
-        }
+        Path baseDir = Paths.get("screenshots", testCaseName, year, month, day, hourMinute);
+        Files.createDirectories(baseDir);
 
-        int testCount = 1;
-        Path testDir;
-        do {
-            String folderName = String.format("test_%02d", testCount);
-            testDir = baseDir.resolve(folderName);
-            testCount++;
-        } while (Files.exists(testDir));
-
-        Files.createDirectories(testDir);
-        return testDir;
+        return baseDir;
     }
 
     public void saveScreenshot(File screenshotFile, Path destinationPath) throws IOException {
@@ -147,19 +140,19 @@ public class RecordTest {
         loginButton.click();
     }
 
-    public void clickChapter(String chapterName) {
+    public void clickChapter(String chapterName, String testCaseName) {
         this.currentChapter = chapterName;
         WebElement chapter = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText(chapterName)));
         chapter.click();
 
         try {
-            this.testDirPath = createScreenshotDirectory(currentChapter);
+            this.testDirPath = createScreenshotDirectory(testCaseName); // 変更点
         } catch (IOException e) {
             System.out.println("ディレクトリ作成エラー: " + e.getMessage());
         }
     }
 
-    public void questionRepetition(int NumberOfQuestions, String testCaseName) {
+    public void repeatInChapter(int NumberOfQuestions) {
         for (int i = 0; i < NumberOfQuestions; i++) {
             List<WebElement> choices = wait
                     .until(ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("label")));
@@ -174,8 +167,24 @@ public class RecordTest {
             WebElement nextQuestionButton = wait.until(ExpectedConditions.elementToBeClickable(By.id("next-question")));
             nextQuestionButton.click();
         }
+    }
 
-        // evaluate画面のスクリーンショットを章のフォルダに保存
+    public void clickPartialLinkText(String PLT) {
+        WebElement test = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText(PLT)));
+        test.click();
+    }
+
+    public void questionRepetition(int NumberOfQuestions, String testCaseName) {
+        repeatInChapter(NumberOfQuestions);
+
+        // evaluateディレクトリに変更
+        try {
+            this.testDirPath = createScreenshotDirectory(testCaseName).resolve("evaluate");
+            Files.createDirectories(testDirPath);
+        } catch (IOException e) {
+            System.out.println("evaluate用ディレクトリ作成エラー: " + e.getMessage());
+        }
+
         takeSingleScreenshotInCurrentChapter("evaluate");
 
         // メニューに戻る
@@ -183,18 +192,17 @@ public class RecordTest {
                 .until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[type='button']")));
         toMenu.click();
 
-        // 履歴画面に遷移してスクリーンショット（フルページ）
-        //WebElement privateHistory = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText("履歴")));
-        //privateHistory.click();
         clickPartialLinkText("履歴");
 
-        // currentChapter は保持したまま、ファイル名のみ「履歴」
-        takeFullPageScreenshots("履歴_" + testCaseName);
-    }
+        // 履歴ディレクトリに変更
+        try {
+            this.testDirPath = createScreenshotDirectory(testCaseName).resolve("履歴");
+            Files.createDirectories(testDirPath);
+        } catch (IOException e) {
+            System.out.println("履歴用ディレクトリ作成エラー: " + e.getMessage());
+        }
 
-    public void clickPartialLinkText(String element) {
-        WebElement clickableElement = wait.until(ExpectedConditions.visibilityOfElementLocated(By.partialLinkText(element))); 
-        clickableElement.click();
+        takeFullPageScreenshots("履歴_" + testCaseName);
     }
 
     @Test
@@ -210,7 +218,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_2() {
         login("first@time", "firsttime");
-        clickChapter("第1章");
+        clickChapter("第1章", "RecordTestCaseNo_2");
         questionRepetition(10, "RecordTestCaseNo_2");
     }
 
@@ -218,7 +226,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_3() {
         login("first@time", "firsttime");
-        clickChapter("第2章");
+        clickChapter("第2章", "RecordTestCaseNo_3");
         questionRepetition(10, "RecordTestCaseNo_3");
     }
 
@@ -226,7 +234,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_4() {
         login("first@time", "firsttime");
-        clickChapter("第3章");
+        clickChapter("第3章", "RecordTestCaseNo_4");
         questionRepetition(10, "RecordTestCaseNo_4");
     }
 
@@ -234,7 +242,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_5() {
         login("first@time", "firsttime");
-        clickChapter("第4章");
+        clickChapter("第4章", "RecordTestCaseNo_5");
         questionRepetition(10, "RecordTestCaseNo_5");
     }
 
@@ -242,7 +250,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_6() {
         login("first@time", "firsttime");
-        clickChapter("第5章");
+        clickChapter("第5章", "RecordTestCaseNo_6");
         questionRepetition(10, "RecordTestCaseNo_6");
     }
 
@@ -250,7 +258,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_7() {
         login("first@time", "firsttime");
-        clickChapter("第6章");
+        clickChapter("第6章", "RecordTestCaseNo_7");
         questionRepetition(10, "RecordTestCaseNo_7");
     }
 
@@ -258,7 +266,7 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_8() {
         login("first@time", "firsttime");
-        clickChapter("模擬試験");
+        clickChapter("模擬試験", "RecordTestCaseNo_8");
         questionRepetition(40, "RecordTestCaseNo_8");
     }
 
@@ -266,12 +274,33 @@ public class RecordTest {
     @Tag("screenshot")
     public void RecordTestCaseNo_9() {
         login("test@user1", "user1");
-        clickChapter("第1章");
+        clickChapter("第1章", "RecordTestCaseNo_2");
         questionRepetition(10, "RecordTestCaseNo_9");
         clickPartialLinkText("ログアウト");
         login("test@user2", "user2");
-        clickChapter("第2章");
+        clickChapter("第2章", "RecordTestCaseNo_2");
         questionRepetition(10, "RecordTestCaseNo_9");
         clickPartialLinkText("ログアウト");
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_11() {
+        login("test@user3", "user3");
+        for (int i = 0; i <= 11; i++) {
+            clickChapter("第1章", "RecordTestCaseNo_11");
+            repeatInChapter(10);
+            clickPartialLinkText("メニューへ");
+        }
+        clickPartialLinkText("履歴");
+
+        List<WebElement> recordCards = driver.findElements(By.className("record-card"));
+
+        long visibleCount = recordCards.stream()
+                .filter(el -> el.isDisplayed())
+                .count();
+
+        Assertions.assertEquals(10, visibleCount, "表示されている record-card の数が10個ではありません");
+
     }
 }
