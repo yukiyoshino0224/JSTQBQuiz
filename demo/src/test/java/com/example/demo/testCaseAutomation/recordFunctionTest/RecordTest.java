@@ -283,17 +283,17 @@ public class RecordTest {
         clickPartialLinkText("ログアウト");
     }
 
-    @Test
-    @Tag("screenshot")
-    public void RecordTestCaseNo_11() {
+    public void elevenChapterRepeate(String chapterName, String testCaseName, int NumberOfQuestions) {
         login("test@user3", "user3");
         for (int i = 0; i <= 11; i++) {
-            clickChapter("第1章", "RecordTestCaseNo_11");
-            repeatInChapter(10);
+            clickChapter(chapterName, testCaseName);
+            repeatInChapter(NumberOfQuestions);
             clickPartialLinkText("メニューへ");
         }
         clickPartialLinkText("履歴");
+    }
 
+    public void recordAssertion() {
         List<WebElement> recordCards = driver.findElements(By.className("record-card"));
 
         long visibleCount = recordCards.stream()
@@ -301,6 +301,65 @@ public class RecordTest {
                 .count();
 
         Assertions.assertEquals(10, visibleCount, "表示されている record-card の数が10個ではありません");
+    }
 
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_11() {
+        elevenChapterRepeate("第1章", "RecordTestCaseNo_11", 10);
+        recordAssertion();
+    }
+
+    public void chapterSelectInRecord(String currentChapter) {
+        WebElement chapters = wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(currentChapter)));
+        chapters.click();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_12() {
+        elevenChapterRepeate("第2章", "RecordTestCaseNo_12", 10);
+        chapterSelectInRecord("button[onclick='showChapter(2)']");
+        recordAssertion();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_13() {
+        elevenChapterRepeate("第3章", "RecordTestCaseNo_13", 10);
+        chapterSelectInRecord("button[onclick='showChapter(3)']");
+        recordAssertion();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_14() {
+        elevenChapterRepeate("第4章", "RecordTestCaseNo_14", 10);
+        chapterSelectInRecord("button[onclick='showChapter(4)']");
+        recordAssertion();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_15() {
+        elevenChapterRepeate("第5章", "RecordTestCaseNo_15", 10);
+        chapterSelectInRecord("button[onclick='showChapter(5)']");
+        recordAssertion();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_16() {
+        elevenChapterRepeate("第6章", "RecordTestCaseNo_16", 10);
+        chapterSelectInRecord("button[onclick='showChapter(6)']");
+        recordAssertion();
+    }
+
+    @Test
+    @Tag("screenshot")
+    public void RecordTestCaseNo_17() {
+        elevenChapterRepeate("模擬試験", "RecordTestCaseNo_17", 10);
+        chapterSelectInRecord("button[onclick='showChapter(0)']");
+        recordAssertion();
     }
 }
