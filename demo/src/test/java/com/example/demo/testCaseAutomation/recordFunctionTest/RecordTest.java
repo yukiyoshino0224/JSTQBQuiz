@@ -358,7 +358,7 @@ public class RecordTest {
     @Test
     @Tag("screenshot")
     public void RecordTestCaseNo_17() {
-        elevenChapterRepeate("模擬試験", "RecordTestCaseNo_17", 10);
+        elevenChapterRepeate("模擬試験", "RecordTestCaseNo_17", 40);
         chapterSelectInRecord("button[onclick='showChapter(0)']");
         recordAssertion();
     }
